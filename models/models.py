@@ -1,5 +1,4 @@
 # In this file we build all the models we want to calibrate
-
 from summer2 import CompartmentalModel
 from summer2.parameters import Parameter
 from typing import List, Dict
@@ -77,3 +76,56 @@ def Build_model(
     )
     
     return model
+
+
+
+def get_sir_model(
+    config: dict,
+) -> CompartmentalModel:
+
+    model = CompartmentalModel(
+        times=(0.0, config["end_time"]),
+        compartments=(
+            "susceptible", 
+            "infectious", 
+            "recovered",
+        ),
+        infectious_compartments=("infectious",),
+    )
+    model.set_initial_population(
+        distribution=
+        {
+            "susceptible": config["population"] - config["seed"], 
+            "infectious": config["seed"],
+        },
+    )
+    
+    model.add_infection_frequency_flow(
+        name="infection", 
+        contact_rate=Parameter("contact_rate"), 
+        source="susceptible", 
+        dest="infectious",
+    )
+    model.add_transition_flow(
+        name="recovery",
+        fractional_rate=Parameter("recovery_rate"),
+        source="infectious",
+        dest="recovered",
+    )
+    model.request_output_for_compartments(name="active_cases", compartments=["infectious"])
+
+    return model
+
+model_config = {
+    "population": 1e6,
+    "seed": 100.0,
+    "end_time": 365.0,
+}
+parameters = {
+    "contact_rate": 0.3,
+    "recovery_rate": 0.1,
+}
+
+def model1():
+    return  get_sir_model(model_config)
+    
