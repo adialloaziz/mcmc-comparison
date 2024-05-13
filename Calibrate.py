@@ -139,7 +139,7 @@ def Compute_metrics(
     return pd.DataFrame(results)
 
 def plot_comparison_bars(results_df: pd.DataFrame):
-    print('Hello')
+    #print('Hello')
     fig, axes = plt.subplots(1, 2, figsize=(10, 5))
     ax = axes[0]
     results_df.plot.bar(y="ESS_per_sec", x="Sampler")#, legend=False)
