@@ -67,7 +67,9 @@ def Sampling_calib(
         mcmc_algo: str,
         initial_params: dict,
         draws = 1000,
-        tune=1000,
+        tune=100,
+        chains = 1,
+        cores = 1,
                 
                 ) -> list[InferenceData, float] :
 
@@ -104,19 +106,22 @@ def Sampling_calib(
                                 initvals = initial_params,
                                 draws=draws,
                                 tune = tune ,
-                                cores=4,
-                                chains=4,
+                                cores=cores,
+                                chains=chains,
                                 progressbar=False
                                 )   
             end = time.time()
             Time = end - start
 
-    return idata, Time #  Using arviz to examine outputs
+    return idata, Time # Will use arviz to examine outputs
 
 def Compute_metrics(
         mcmc_algo: str,
         idata: InferenceData,
         Time: float,
+        draws, 
+        chains,
+        tune,
                     ) :
     
     ess_mean = compute_mean_Ess(idata)
@@ -124,13 +129,17 @@ def Compute_metrics(
 
     rhat_mean = compute_mean_Rhat(idata)
     rhat_max = compute_max_Rhat(idata)
+
     results = dict(
         Sampler = mcmc_algo.name,
+        Draws = draws,
+        Chains = chains,
+        Tune = tune,
         Time = Time,
         Mean_ESS = ess_mean,
+        Min_Ess = ess_min,
         Ess_per_sec = ess_mean/Time, 
         Mean_Rhat = rhat_mean,
-        Min_Ess = ess_min,
         Rhat_max = rhat_max,
 
         Trace = [idata],
@@ -139,7 +148,6 @@ def Compute_metrics(
     return pd.DataFrame(results)
 
 def plot_comparison_bars(results_df: pd.DataFrame):
-    #print('Hello')
     fig, axes = plt.subplots(1, 2, figsize=(10, 5))
     ax = axes[0]
     results_df.plot.bar(y="ESS_per_sec", x="Sampler")#, legend=False)
