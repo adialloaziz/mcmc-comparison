@@ -61,6 +61,7 @@ def compute_min_Ess(
     min_ess_df = pd.DataFrame(data, index=[0])
     return min_ess_df.values.min()
     
+    
 
 def Sampling_calib(
         bcm_model : BayesianCompartmentalModel,
@@ -148,9 +149,9 @@ def Compute_metrics(
     return pd.DataFrame(results)
 
 def plot_comparison_bars(results_df: pd.DataFrame):
-    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+    fig, axes = plt.subplots(1, 2, figsize=(16, 8))
     ax = axes[0]
-    results_df.plot.bar(y="ESS_per_sec", x="Sampler")#, legend=False)
+    ax.bar(x=results_df["Run"], height=results_df["Ess_per_sec"])#, legend=False)
     ax.set_title("ESS per Second")
     ax.set_xlabel("")
     labels = ax.get_xticklabels()
@@ -162,7 +163,7 @@ def plot_comparison_bars(results_df: pd.DataFrame):
     labels = ax.get_xticklabels()
     """
     ax = axes[1]
-    results_df.plot.bar(y="Mean_Rhat", x="Sampler", ax=ax, legend=False)
+    ax.bar(x=results_df["Run"], height=results_df["Mean_Rhat"])#, legend=False)
     ax.set_title(r"$\hat{R}$")
     ax.set_xlabel("")
     ax.set_ylim(1)
@@ -170,3 +171,4 @@ def plot_comparison_bars(results_df: pd.DataFrame):
     plt.suptitle(f"Comparison of Runs for ... Target Distribution", fontsize=16)
 
     plt.tight_layout()
+    plt.show()
