@@ -10,6 +10,11 @@ from arviz import InferenceData
 import time
 import matplotlib .pyplot as plt
 
+import numpyro
+from numpyro import distributions as dist
+from numpyro import infer
+from jax import random
+
 def compute_max_Rhat(
         idata: InferenceData
         
@@ -71,26 +76,41 @@ def Sampling_calib(
         tune=100,
         chains = 1,
         cores = 1,
-                
+        # hmc_warmup = 1000,
                 ) -> list[InferenceData, float] :
 
     """
     Args:
     - model : A BayesianCompartmentalModel, within wich the targets and priors distributions will be extracted.
-    - mcmc algo (str) : A Markov Chain Monte Carlo algorithm can be from the Pymc list of MCMC algorithms or a disigned sampler algorithm.
+    - mcmc algo (str) : A Markov Chain Monte Carlo algorithm can be from the Pymc/Numpyro list of MCMC algorithms or a disigned sampler algorithm.
                   please refer do the Pymc documentation for more details.
     - initial_params (dict) : The MCMC algorithm starting points.
     - draws(int) : The size of the chains (each chain if running multiple chains). Default 1000 samples.
-    - tune : 
-
+    - tune (int, default 100): Number of tune for Pymc MCMC algo, number of warmup for HMC family 
+    - chains(int, default 1): Number of chains for multiple chains sampling
+    -cores(int, default 1 ): Number of cpu cores to use for mutlichain sampling.
 
     Returns:
      - An arviz InferenceData which provides the stats and diagnostics of the chains convergence.
      We may add soon the ESS/second, the minimum number of iterations to obtain the given Ess etc..
     """
-    sampler_name = mcmc_algo.name #Name of the sampler
-    if sampler_name == "nuts": #We need to set some specifications for this sampler.
-        pass
+    sampler_name = mcmc_algo.__name__ #Name of the sampler
+    if sampler_name == "NUTS": # We need to set some specifications for this sampler. 
+                               # Use of numpyro and/or BlackJax 
+        # pass
+        def nmodel():
+            sampled = {k:numpyro.sample(k, dist.Uniform(0.0,1.0)) for k in bcm_model.parameters}
+            ll = numpyro.factor("ll", bcm_model.loglikelihood(**sampled))
+
+        kernel = infer.NUTS(nmodel)
+        mcmc = infer.MCMC(kernel, num_warmup=tune, num_chains=4, num_samples=draws, progress_bar=False)
+        start = time.time()
+
+        mcmc.run(random.PRNGKey(0))
+        end = time.time()
+        Time = end - start
+        idata = az.from_numpyro(mcmc)
+
     else :
         with pm.Model() as model:
 
@@ -132,7 +152,7 @@ def Compute_metrics(
     rhat_max = compute_max_Rhat(idata)
 
     results = dict(
-        Sampler = mcmc_algo.name,
+        Sampler = mcmc_algo.__name__,
         Draws = draws,
         Chains = chains,
         Tune = tune,
@@ -149,7 +169,7 @@ def Compute_metrics(
     return pd.DataFrame(results)
 
 def plot_comparison_bars(results_df: pd.DataFrame):
-    fig, axes = plt.subplots(1, 2, figsize=(16, 8))
+    fig, axes = plt.subplots(1, 2) #, figsize=(20, 12))
     ax = axes[0]
     ax.bar(x=results_df["Run"], height=results_df["Ess_per_sec"])#, legend=False)
     ax.set_title("ESS per Second")

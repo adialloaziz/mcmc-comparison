@@ -65,9 +65,9 @@ def get_targets(targets_yml) -> list:
     """
     target_data = load_data(data_yml=targets_yml) #Converting the yml file into a pd.Series
     return [
-        est.TruncatedNormalTarget("active_cases", target_data["active_cases"], (0.0,np.inf), stdev=
+        est.NormalTarget("active_cases", target_data["active_cases"],
         #esp.UniformPrior("active_cases_dispersion",(0.1, targets_data.max()*0.1))) #Calibration de l'ecart type
-       0.5) #Utiliser un nombre fixe pour ne pas l'inclure dans la calibration
+       2000.0) #Utiliser un nombre fixe pour ne pas l'inclure dans la calibration
     ]
 
 #_____________________________________________________________________________________
