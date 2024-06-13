@@ -168,11 +168,61 @@ def Compute_metrics(
     
     return pd.DataFrame(results)
 
-def plot_comparison_bars(results_df: pd.DataFrame):
-    fig, axes = plt.subplots(1, 2) #, figsize=(20, 12))
+
+from joblib import Parallel, delayed
+
+def multirun(sampler : str, 
+            draws : int,
+            tune : int,
+            bcm_model: BayesianCompartmentalModel,
+            n_iterations : int,
+            n_jobs: int,
+            initial_params: dict,
+            )->pd.DataFrame:
+    
+    iterations = range(n_iterations)
+    def run_analysis():
+        df = pd.DataFrame()
+        idata, Time = Sampling_calib(
+                bcm_model = bcm_model,
+                mcmc_algo = sampler,
+                initial_params = initial_params,
+                draws = draws,
+                tune = tune,
+                cores = 4,
+                chains = 4,
+                )
+        results = Compute_metrics(
+                mcmc_algo = sampler,
+                idata = idata,
+                Time = Time,
+                draws = draws, 
+                chains = 4,
+                tune = tune,
+                    )
+            
+        df = pd.concat([df, results])
+        results_df = df
+        results_df["Run"] = results_df.Sampler + "\nDraws=" + results_df.Draws.astype(str) + "\nTune=" + results_df.Tune.astype(str)
+
+        results_df = results_df.reset_index(drop=True)
+        return results_df
+    if sampler.__name__ == "NUTS":
+        backend = 'processes'
+    else :
+        backend = 'threads'
+    results = Parallel(n_jobs=n_jobs, prefer=backend,timeout=1000)(delayed(run_analysis)() for i in iterations)
+
+    return pd.concat(results, ignore_index=True)
+
+
+
+def plot_comparison_Bars(results_df: pd.DataFrame):
+    fig, axes = plt.subplots(2, 1, figsize=(10, 8))
     ax = axes[0]
-    ax.bar(x=results_df["Run"], height=results_df["Ess_per_sec"])#, legend=False)
+    ax.bar(x=results_df["Run"], height=results_df["Ess_per_sec"],width= 0.2)#, legend=False)
     ax.set_title("ESS per Second")
+    # ax.set_xlabel('Run',  rotation='vertical',fontsize=28)
     ax.set_xlabel("")
     labels = ax.get_xticklabels()
     """
@@ -183,12 +233,12 @@ def plot_comparison_bars(results_df: pd.DataFrame):
     labels = ax.get_xticklabels()
     """
     ax = axes[1]
-    ax.bar(x=results_df["Run"], height=results_df["Mean_Rhat"])#, legend=False)
+    ax.bar(x=results_df["Run"], height=results_df["Mean_Rhat"],width= 0.2)#, legend=False)
     ax.set_title(r"$\hat{R}$")
     ax.set_xlabel("")
     ax.set_ylim(1)
     labels = ax.get_xticklabels()
-    plt.suptitle(f"Comparison of Runs for ... Target Distribution", fontsize=16)
+    plt.suptitle(f"Comparison of MCMC runs using the simple SIR model", fontsize=12)
 
     plt.tight_layout()
     plt.show()
