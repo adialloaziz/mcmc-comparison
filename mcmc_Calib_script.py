@@ -80,29 +80,29 @@ results = []
 
 
 #     #print(sampler)
-#     idata, Time = cal.Sampling_calib(
-#         bcm_model = bcm_model_1,
-#         mcmc_algo = sampler,
-#         initial_params = parameters,
-#         draws = draws,
-#         tune = tune,
-#         cores = 4,
-#         chains = chains,
-#         )
+    idata, Time = cal.Sampling_calib(
+        bcm_model = bcm_model_1,
+        mcmc_algo = sampler,
+        initial_params = parameters,
+        draws = draws,
+        tune = tune,
+        cores = 4,
+        chains = chains,
+        )
 
-#     results.append(cal.Compute_metrics(
-#         mcmc_algo = sampler,
-#         idata = idata,
-#         Time = Time,
-#         draws = draws, 
-#         chains = chains,
-#         tune = tune,
-#             )
-#         )
+    results.append(cal.Compute_metrics(
+        mcmc_algo = sampler,
+        idata = idata,
+        Time = Time,
+        draws = draws, 
+        chains = chains,
+        tune = tune,
+            )
+        )
 
 
-# results_df = pd.concat(results)
-# results_df["Run"] = results_df.Sampler + "\nDraws=" + results_df.Chains.astype(str) + "\nTune=" + results_df.Tune.astype(str)
+results_df = pd.concat(results)
+results_df["Run"] = results_df.Sampler + "\nDraws=" + results_df.Chains.astype(str) + "\nTune=" + results_df.Tune.astype(str)
 
-# results_df = results_df.reset_index(drop=True)
+results_df = results_df.reset_index(drop=True)
 # results_df.style.set_caption("MCMC COMPARISON")
