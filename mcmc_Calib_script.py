@@ -11,9 +11,6 @@ import platform
 #     mp.set_start_method('spawn')
 
     # mp.set_start_method('forkserver')
-
-    
-
 import Calibrate as cal #Runing the calibration process and gathering results
 from calibs_utilities import get_all_priors, get_targets, load_data
 from models.models import model1 #All the models we design for the test
@@ -28,7 +25,7 @@ import numpy as np
 import plotly.express as px
 import matplotlib.pyplot as plt
 from typing import List
-
+import pickle
 import pymc as pm
 
 # We use estivals parallel tools to run the model evaluations
@@ -46,7 +43,6 @@ if __name__ == "__main__":
     
         mp.set_start_method('spawn')
 
-    print ("I'm here")
     
     BASE_PATH = Path(__file__).parent.resolve()
     DATA_PATH = BASE_PATH / "data"
@@ -74,43 +70,67 @@ if __name__ == "__main__":
         #"active_cases_dispersion": 0.5,
     }
     bcm_model_1 = BayesianCompartmentalModel(model_1, parameters, priors, targets)
-    # print(bcm_model_1)
-    
+
+        
     #_____________SAMPLING PROCESS________________________________________________________
+
+    #__________________Simple run for algorithms with different draws and or tuning________
     
     D = 2 # Dimension of the parameter's space
-    sampler = pm.Metropolis #[infer.NUTS] # [pm.DEMetropolisZ]*2 + [pm.DEMetropolis]*2 + [pm.Metropolis]*4
-    draws = 2000 #[4000]*6+ [8000]*2
-    tune = 1000 #[100] + [1000] + [100] + [1000] + [100] + [1000] + [100] + [1000]
+    samplers = [infer.NUTS]*2 + [pm.DEMetropolisZ]*2 + [pm.DEMetropolis]*2 + [pm.Metropolis]*4
+    Draws = [2000]*2 + [4000]*6 + [8000]*2
+    Tunes = [100, 1000]*5
     chains = 2*D
-    results = []
-    
-    
-    
-    #     #print(sampler)
-    idata, Time = cal.Sampling_calib(
-        bcm_model = bcm_model_1,
-        mcmc_algo = sampler,
-        initial_params = parameters,
-        draws = draws,
-        tune = tune,
-        cores = 4,
-        chains = chains,
-            )
-    
-    results.append(cal.Compute_metrics(
-            mcmc_algo = sampler,
-            idata = idata,
-            Time = Time,
-            draws = draws, 
-            chains = chains,
+    ##____Uniform Initialisation for each chain_________
+    init_vals = []
+    for c in range(chains):
+        init_vals.append({param: np.random.uniform(0.0,1.0) for param in parameters.keys()})
+
+    results_df = pd.DataFrame()
+
+    for sampler, draws, tune in zip (samplers, Draws, Tunes):
+        
+        #calling the function multirun with only one iteration
+        results = cal.multirun(sampler = sampler, 
+            draws = draws,
             tune = tune,
-                )
+            bcm_model = bcm_model_1,
+            n_iterations = 1,
+            n_jobs = 1,
+            initial_params = init_vals
             )
-    
-    
-    results_df = pd.concat(results)
-    # results_df["Run"] = results_df.Sampler + "\nDraws=" + results_df.Chains.astype(str) + "\nTune=" + results_df.Tune.astype(str)
-    
-    # results_df = results_df.reset_index(drop=True)
-    # results_df.style.set_caption("MCMC COMPARISON")
+            
+        results_df = pd.concat([results_df,results])
+    results_df = results_df.reset_index(drop=True)
+
+    #Storing our results in to pickle file
+
+    with open('./Results/Model_1/Simple_run_results.pkl', 'wb') as fp:
+        pickle.dump(results_df, fp)
+    #__________________________________________________________________
+
+
+    #____________Multiple run for Staical Analysis___________________
+
+    # all_results = dict()
+    # sampler = infer.NUTS
+    # all_results[sampler.__name__] = cal.multirun(sampler, draws = 2000,tune = 1000, bcm_model = bcm_model_1,n_iterations = 100,n_jobs = 4, initial_params = init_vals)
+
+    # sampler = pm.DEMetropolis
+    # all_results[sampler.__name__] = cal.multirun(sampler, draws = 4000,tune = 1000,bcm_model = bcm_model_1,n_iterations = 100,n_jobs = 4,initial_params = init_vals
+    # )
+
+    # sampler = pm.DEMetropolisZ
+    # all_results[sampler.__name__] = cal.multirun(sampler, draws = 4000,tune = 1000,bcm_model = bcm_model_1,n_iterations = 100,n_jobs = 4,initial_params = init_vals
+    # )
+
+    # sampler = pm.Metropolis
+    # all_results[sampler.__name__] = cal.multirun(sampler, draws = 8000,tune = 1000,bcm_model = bcm_model_1,n_iterations = 100,n_jobs = 4,initial_params = init_vals
+    # )
+    # # Storing the results in a pickle file
+    # with open('./Results/Model_1/Multiple_run_results.pkl', 'wb') as fp:
+    #     pickle.dump(all_results, fp)
+
+
+
+

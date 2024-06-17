@@ -23,12 +23,19 @@
 
 ### Python Stuff ###
 __pycache__/
+*.pyc
+models/__pycache__/models.cpython-310.pyc
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+log/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+# Produced results/outputs
+*.pkl
+Results/
 
 # IPython
 profile_default/

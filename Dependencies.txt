@@ -1,0 +1,4 @@
+preferably run code with python 3.10
+summerepi2==1.3.6 #Compatible with latest jax version 
+estival
+pymc>=5
