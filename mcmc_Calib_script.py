@@ -15,7 +15,7 @@ if platform.system() != "Windows":
 import Calibrate as cal #Runing the calibration process and gathering results
 from calibs_utilities import get_all_priors, get_targets, load_data
 from models.models import model1 #All the models we design for the test
-from Calibrate import plot_comparison_bars
+from Calibrate import plot_comparison_Bars
 
 # Combining tagets and prior with our summer2 model in a BayesianCompartmentalModel (BCM)
 from estival.model import BayesianCompartmentalModel
