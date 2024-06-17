@@ -80,17 +80,17 @@ results = []
 
 
 #     #print(sampler)
-    idata, Time = cal.Sampling_calib(
-        bcm_model = bcm_model_1,
-        mcmc_algo = sampler,
-        initial_params = parameters,
-        draws = draws,
-        tune = tune,
-        cores = 4,
-        chains = chains,
+idata, Time = cal.Sampling_calib(
+    bcm_model = bcm_model_1,
+    mcmc_algo = sampler,
+    initial_params = parameters,
+    draws = draws,
+    tune = tune,
+    cores = 4,
+    chains = chains,
         )
 
-    results.append(cal.Compute_metrics(
+results.append(cal.Compute_metrics(
         mcmc_algo = sampler,
         idata = idata,
         Time = Time,
