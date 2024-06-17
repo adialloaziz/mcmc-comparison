@@ -71,9 +71,9 @@ bcm_model_1 = BayesianCompartmentalModel(model_1, parameters, priors, targets)
 #_____________SAMPLING PROCESS________________________________________________________
 
 D = 2 # Dimension of the parameter's space
-samplers = [pm.Metropolis] #[infer.NUTS] # [pm.DEMetropolisZ]*2 + [pm.DEMetropolis]*2 + [pm.Metropolis]*4
-Draws = [2000] #[4000]*6+ [8000]*2
-Tunes = [1000] #[100] + [1000] + [100] + [1000] + [100] + [1000] + [100] + [1000]
+sampler = pm.Metropolis #[infer.NUTS] # [pm.DEMetropolisZ]*2 + [pm.DEMetropolis]*2 + [pm.Metropolis]*4
+draws = 2000 #[4000]*6+ [8000]*2
+tune = 1000 #[100] + [1000] + [100] + [1000] + [100] + [1000] + [100] + [1000]
 chains = 2*D
 results = []
 
@@ -102,7 +102,7 @@ results.append(cal.Compute_metrics(
 
 
 results_df = pd.concat(results)
-results_df["Run"] = results_df.Sampler + "\nDraws=" + results_df.Chains.astype(str) + "\nTune=" + results_df.Tune.astype(str)
+# results_df["Run"] = results_df.Sampler + "\nDraws=" + results_df.Chains.astype(str) + "\nTune=" + results_df.Tune.astype(str)
 
-results_df = results_df.reset_index(drop=True)
+# results_df = results_df.reset_index(drop=True)
 # results_df.style.set_caption("MCMC COMPARISON")
