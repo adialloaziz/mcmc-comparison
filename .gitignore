@@ -42,3 +42,4 @@ profile_default/
 ipython_config.py
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode
+models/__pycache__/models.cpython-310.pyc

@@ -207,7 +207,7 @@ def multirun(sampler : str,
 
         results_df = results_df.reset_index(drop=True)
         return results_df
-    if sampler.__name__ == "NUTS":
+    if sampler.__name__ == "NUTS" or sampler.__name__ == "DEMetropolis":
         backend = 'processes'
     else :
         backend = 'threads'

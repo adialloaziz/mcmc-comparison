@@ -1,0 +1,3 @@
+18/06/24
+    Remarques better performance in terme of Rhat and Ess while runing analysis using cuda jpu (through jaxlib when executing the python script )
+    compared against cpu(notebook) 
