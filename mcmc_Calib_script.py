@@ -66,7 +66,7 @@ if __name__ == "__main__":
     # print("Number of jobs for multirun = ", args.n_jobs)
     if platform.system() != "Windows":
     
-        mp.set_start_method('spawn')
+        mp.set_start_method('forkserver')
 
     
     if args.application == 1 : #Runing analysis for application 1
