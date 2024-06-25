@@ -111,7 +111,7 @@ if __name__ == "__main__":
         ##____Uniform Initialisation for each chain_________
         init_vals_pymc = []
         for c in range(chains):
-            init_vals.append({param: np.random.uniform(0.0,1.0) for param in parameters.keys()})
+            init_vals_pymc.append({param: np.random.uniform(0.0,1.0) for param in parameters.keys()})
 
         init_vals_nuts = {param: jnp.array(np.random.uniform(0.0,1.0, 4)) for param in parameters.keys()}
 
