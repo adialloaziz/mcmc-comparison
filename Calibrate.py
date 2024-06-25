@@ -230,7 +230,7 @@ def plot_comparison_bars(results_df):
     ax.set_xlabel("")
     ax.set_ylim(1)
     labels = ax.get_xticklabels()
-    plt.suptitle(f"Comparison of Runs for {2} Dimensional Target Distribution", fontsize=16)
+    plt.suptitle(f"Comparison MCMC runs", fontsize=12)
     plt.tight_layout()
 
 # def plot_comparison_Bars(results_df: pd.DataFrame):
