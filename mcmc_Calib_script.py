@@ -151,28 +151,28 @@ if __name__ == "__main__":
 
         sampler = infer.NUTS
         start = time()
-        all_results[sampler.__name__] = cal.multirun(sampler, draws = 2000,tune = 1000, bcm_model = bcm_model_1,n_iterations = 5,n_jobs = n_jobs  , initial_params = init_vals_nuts)
+        all_results[sampler.__name__] = cal.multirun(sampler, draws = 2000,tune = 1000, bcm_model = bcm_model_1,n_iterations = 100,n_jobs = n_jobs  , initial_params = init_vals_nuts)
         end = time()
         print("NUTS walltime: ", end - start)
 
 
         sampler = pm.DEMetropolis
         start = time()
-        all_results[sampler.__name__] = cal.multirun(sampler, draws = 4000,tune = 1000,bcm_model = bcm_model_1,n_iterations = 5, n_jobs= n_jobs,initial_params = init_vals
+        all_results[sampler.__name__] = cal.multirun(sampler, draws = 4000,tune = 1000,bcm_model = bcm_model_1,n_iterations = 100, n_jobs= n_jobs,initial_params = init_vals
         )
         end = time()
         print("DEMetropolis walltime:\n", end - start)
 
         sampler = pm.DEMetropolisZ
         start = time()
-        all_results[sampler.__name__] = cal.multirun(sampler, draws = 4000,tune = 1000,bcm_model = bcm_model_1,n_iterations = 5,n_jobs = n_jobs,initial_params = init_vals
+        all_results[sampler.__name__] = cal.multirun(sampler, draws = 4000,tune = 1000,bcm_model = bcm_model_1,n_iterations = 100,n_jobs = n_jobs,initial_params = init_vals
         )
         end = time()
         print("DEMetropolisZ walltime:\n", end - start)
 
         sampler = pm.Metropolis
         start = time()
-        all_results[sampler.__name__] = cal.multirun(sampler, draws = 8000,tune = 1000,bcm_model = bcm_model_1,n_iterations = 5,n_jobs= n_jobs,initial_params = init_vals
+        all_results[sampler.__name__] = cal.multirun(sampler, draws = 8000,tune = 1000,bcm_model = bcm_model_1,n_iterations = 100,n_jobs= n_jobs,initial_params = init_vals
         )
         end = time()
         print("Metropolis walltime:\n", end - start)
