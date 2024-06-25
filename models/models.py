@@ -104,7 +104,6 @@ def model2():
     # Stratify the model first
     #We suppose that only the susceptibility varies by age
     age_suscept = {str(catgr): Parameter(f"age_transmission_rate_{str(catgr)}") for catgr in strata } 
-    print(age_suscept)
     age_strat.set_flow_adjustments('infection', adjustments=age_suscept)
 
 

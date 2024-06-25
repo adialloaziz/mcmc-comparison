@@ -71,7 +71,7 @@ def compute_min_Ess(
 def Sampling_calib(
         bcm_model : BayesianCompartmentalModel,
         mcmc_algo: str,
-        initial_params: dict,
+        initial_params: dict | list,
         draws = 1000,
         tune=100,
         chains = 1,
@@ -84,7 +84,7 @@ def Sampling_calib(
     - model : A BayesianCompartmentalModel, within wich the targets and priors distributions will be extracted.
     - mcmc algo (str) : A Markov Chain Monte Carlo algorithm can be from the Pymc/Numpyro list of MCMC algorithms or a disigned sampler algorithm.
                   please refer do the Pymc documentation for more details.
-    - initial_params (dict) : The MCMC algorithm starting points.
+    - initial_params (dict) : The MCMC algorithm starting points. 
     - draws(int) : The size of the chains (each chain if running multiple chains). Default 1000 samples.
     - tune (int, default 100): Number of tune for Pymc MCMC algo, number of warmup for HMC family 
     - chains(int, default 1): Number of chains for multiple chains sampling
@@ -106,10 +106,11 @@ def Sampling_calib(
         mcmc = infer.MCMC(kernel, num_warmup=tune, num_chains=4, num_samples=draws, progress_bar=False)
         start = time.time()
 
-        mcmc.run(random.PRNGKey(0))
+        mcmc.run(random.PRNGKey(0), init_params=initial_params)
         end = time.time()
         Time = end - start
         idata = az.from_numpyro(mcmc)
+        mcmc.__init__
 
     else :
         with pm.Model() as model:
@@ -118,7 +119,6 @@ def Sampling_calib(
             variables = epm.use_model(bcm_model)
 
             # Now call a sampler using the variables from use_model
-            # In this case we use the Differential Evolution Metropolis sampler
             # See the PyMC docs for more details
             step_kwargs = {} #dict(variables,proposal_dist = pm.NormalProposal)
             step = mcmc_algo(**step_kwargs)
@@ -134,7 +134,7 @@ def Sampling_calib(
             end = time.time()
             Time = end - start
 
-    return idata, Time # Will use arviz to examine outputs
+    return idata, Time # Will use arviz to examine outputs (trace)
 
 def Compute_metrics(
         mcmc_algo: str,
@@ -167,7 +167,6 @@ def Compute_metrics(
     )
     
     return pd.DataFrame(results)
-
 
 from joblib import Parallel, delayed
 
@@ -216,29 +215,49 @@ def multirun(sampler : str,
     return pd.concat(results, ignore_index=True)
 
 
-
-def plot_comparison_Bars(results_df: pd.DataFrame):
-    fig, axes = plt.subplots(2, 1, figsize=(10, 8))
+def plot_comparison_bars(results_df):
+    pd.options.plotting.backend = "matplotlib"
+    fig, axes = plt.subplots(1, 2, figsize=(10, 6))
     ax = axes[0]
-    ax.bar(x=results_df["Run"], height=results_df["Ess_per_sec"],width= 0.2)#, legend=False)
-    ax.set_title("ESS per Second")
-    # ax.set_xlabel('Run',  rotation='vertical',fontsize=28)
+    results_df.plot.bar(y="Ess_per_sec", x="Run", ax=ax, legend=False)
+    ax.set_title("Ess_per_sec")
     ax.set_xlabel("")
     labels = ax.get_xticklabels()
-    """
+
     ax = axes[1]
-    results_df.plot.bar(y="ESS_pct", x="Run", ax=ax, legend=False)
-    ax.set_title("ESS Percentage")
-    ax.set_xlabel("")
-    labels = ax.get_xticklabels()
-    """
-    ax = axes[1]
-    ax.bar(x=results_df["Run"], height=results_df["Mean_Rhat"],width= 0.2)#, legend=False)
+    results_df.plot.bar(y="Mean_Rhat", x="Run", ax=ax, legend=False)
     ax.set_title(r"$\hat{R}$")
     ax.set_xlabel("")
     ax.set_ylim(1)
     labels = ax.get_xticklabels()
-    plt.suptitle(f"Comparison of MCMC runs using the simple SIR model", fontsize=12)
-
+    plt.suptitle(f"Comparison of Runs for {2} Dimensional Target Distribution", fontsize=16)
     plt.tight_layout()
-    plt.show()
+
+# def plot_comparison_Bars(results_df: pd.DataFrame):
+#     fig, axes = plt.subplots(1, 2, figsize=(10, 8))
+#     ax = axes[0]
+#     ax.bar(x=results_df["Run"], height=results_df["Ess_per_sec"],width= 0.2)#, legend=False)
+#     ax.set_title("ESS per Second")
+#     # ax.set_xlabel('Run',  rotation='vertical',fontsize=28)
+#     ax.set_xlabel("")
+#     labels = ax.get_xticklabels()
+#     """
+#     ax = axes[1]
+#     results_df.plot.bar(y="ESS_pct", x="Run", ax=ax, legend=False)
+#     ax.set_title("ESS Percentage")
+#     ax.set_xlabel("")
+#     labels = ax.get_xticklabels()
+#     """
+#     ax = axes[1]
+#     ax.bar(x=results_df["Run"], height=results_df["Mean_Rhat"],width= 0.2)#, legend=False)
+#     ax.set_title(r"$\hat{R}$")
+#     ax.set_xlabel("")
+#     ax.set_ylim(1)
+#     labels = ax.get_xticklabels()
+#     plt.suptitle(f"Comparison of MCMC runs using the simple SIR model", fontsize=12)
+
+#     plt.tight_layout()
+#     plt.show()
+
+
+

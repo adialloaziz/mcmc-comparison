@@ -24,6 +24,7 @@ from Calibrate import plot_comparison_Bars
 from estival.model import BayesianCompartmentalModel
 
 import pandas as pd
+from jax import numpy as jnp
 import numpy as np
 import pickle
 import pymc as pm
@@ -113,32 +114,33 @@ if __name__ == "__main__":
         for c in range(chains):
             init_vals.append({param: np.random.uniform(0.0,1.0) for param in parameters.keys()})
 
-        # results_df = pd.DataFrame()
+        init_vals_nuts = {param: jnp.array(np.random.uniform(0.0,1.0, 4)) for param in parameters.keys()}
 
-        # start = time()
-        # print("Simple run involved sampler with varying draws/tune...\n")
-        # for sampler, draws, tune in zip (samplers, Draws, Tunes):
+        results_df = pd.DataFrame()
+        start = time()
+        print("Simple run involved sampler with varying draws/tune...\n")
+        for sampler, draws, tune in zip (samplers, Draws, Tunes):
             
-        #     #calling the function multirun with only one iteration
-        #     results = cal.multirun(sampler = sampler, 
-        #         draws = draws,
-        #         tune = tune,
-        #         bcm_model = bcm_model_1,
-        #         n_iterations = 1,
-        #         n_jobs = 1, #args.n_jobs,
-        #         initial_params = init_vals
-        #         )
+            #calling the function multirun with only one iteration
+            results = cal.multirun(sampler = sampler, 
+                draws = draws,
+                tune = tune,
+                bcm_model = bcm_model_1,
+                n_iterations = 1,
+                n_jobs = 1, #args.n_jobs,
+                initial_params = init_vals
+                )
                 
-        #     results_df = pd.concat([results_df,results])
-        # results_df = results_df.reset_index(drop=True)
-        # end = time()
+            results_df = pd.concat([results_df,results])
+        results_df = results_df.reset_index(drop=True)
+        end = time()
 
-        # print("Simple run walltime:\n", end - start)
+        print("Simple run walltime:\n", end - start)
 
-        # #Storing our results in to pickle file
+        #Storing our results in to pickle file
 
-        # with open('./Results/Model_1/Simple_run_results.pkl', 'wb') as fp:
-        #     pickle.dump(results_df, fp)
+        with open('./Results/Model_1/Simple_run_results.pkl', 'wb') as fp:
+            pickle.dump(results_df, fp)
         #__________________________________________________________________
 
 
@@ -149,7 +151,7 @@ if __name__ == "__main__":
 
         sampler = infer.NUTS
         start = time()
-        all_results[sampler.__name__] = cal.multirun(sampler, draws = 2000,tune = 1000, bcm_model = bcm_model_1,n_iterations = 5,n_jobs = n_jobs  , initial_params = init_vals)
+        all_results[sampler.__name__] = cal.multirun(sampler, draws = 2000,tune = 1000, bcm_model = bcm_model_1,n_iterations = 5,n_jobs = n_jobs  , initial_params = init_vals_nuts)
         end = time()
         print("NUTS walltime: ", end - start)
 
