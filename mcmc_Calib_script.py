@@ -109,7 +109,7 @@ if __name__ == "__main__":
         Tunes = [100, 1000]*5
         chains = 2*D
         ##____Uniform Initialisation for each chain_________
-        init_vals = []
+        init_vals_pymc = []
         for c in range(chains):
             init_vals.append({param: np.random.uniform(0.0,1.0) for param in parameters.keys()})
 
@@ -119,7 +119,10 @@ if __name__ == "__main__":
         start = time()
         print("Simple run involved sampler with varying draws/tune...\n")
         for sampler, draws, tune in zip (samplers, Draws, Tunes):
-            
+            if sampler.__name__ == "NUTS": #Because the format for sampler in pymc and numpyro are different 
+                init_vals = init_vals_nuts
+            else :
+                init_vals = init_vals_pymc
             #calling the function multirun with only one iteration
             results = cal.multirun(sampler = sampler, 
                 draws = draws,
