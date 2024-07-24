@@ -18,7 +18,6 @@ import platform
 import Calibrate as cal #Runing the calibration process and gathering results
 from calibs_utilities import get_all_priors, get_targets
 from models.models import model1 #All the models we design for the test
-from Calibrate import plot_comparison_Bars
 
 # Combining tagets and prior with our summer2 model in a BayesianCompartmentalModel (BCM)
 from estival.model import BayesianCompartmentalModel
@@ -110,9 +109,9 @@ if __name__ == "__main__":
         Tunes = [100, 1000]*5
         chains = 2*D
         ##____Uniform Initialisation for each chain_________
-        init_vals = []
+        init_vals_pymc = []
         for c in range(chains):
-            init_vals.append({param: np.random.uniform(0.0,1.0) for param in parameters.keys()})
+            init_vals_pymc.append({param: np.random.uniform(0.0,1.0) for param in parameters.keys()})
 
         init_vals_nuts = {param: jnp.array(np.random.uniform(0.0,1.0, 4)) for param in parameters.keys()}
 
@@ -120,7 +119,10 @@ if __name__ == "__main__":
         start = time()
         print("Simple run involved sampler with varying draws/tune...\n")
         for sampler, draws, tune in zip (samplers, Draws, Tunes):
-            
+            if sampler.__name__ == "NUTS": #Because the format for sampler in pymc and numpyro are different 
+                init_vals = init_vals_nuts
+            else :
+                init_vals = init_vals_pymc
             #calling the function multirun with only one iteration
             results = cal.multirun(sampler = sampler, 
                 draws = draws,
@@ -151,28 +153,28 @@ if __name__ == "__main__":
 
         sampler = infer.NUTS
         start = time()
-        all_results[sampler.__name__] = cal.multirun(sampler, draws = 2000,tune = 1000, bcm_model = bcm_model_1,n_iterations = 5,n_jobs = n_jobs  , initial_params = init_vals_nuts)
+        all_results[sampler.__name__] = cal.multirun(sampler, draws = 2000,tune = 1000, bcm_model = bcm_model_1,n_iterations = 100,n_jobs = n_jobs  , initial_params = init_vals_nuts)
         end = time()
         print("NUTS walltime: ", end - start)
 
 
         sampler = pm.DEMetropolis
         start = time()
-        all_results[sampler.__name__] = cal.multirun(sampler, draws = 4000,tune = 1000,bcm_model = bcm_model_1,n_iterations = 5, n_jobs= n_jobs,initial_params = init_vals
+        all_results[sampler.__name__] = cal.multirun(sampler, draws = 4000,tune = 1000,bcm_model = bcm_model_1,n_iterations = 100, n_jobs= n_jobs,initial_params = init_vals
         )
         end = time()
         print("DEMetropolis walltime:\n", end - start)
 
         sampler = pm.DEMetropolisZ
         start = time()
-        all_results[sampler.__name__] = cal.multirun(sampler, draws = 4000,tune = 1000,bcm_model = bcm_model_1,n_iterations = 5,n_jobs = n_jobs,initial_params = init_vals
+        all_results[sampler.__name__] = cal.multirun(sampler, draws = 4000,tune = 1000,bcm_model = bcm_model_1,n_iterations = 100,n_jobs = n_jobs,initial_params = init_vals
         )
         end = time()
         print("DEMetropolisZ walltime:\n", end - start)
 
         sampler = pm.Metropolis
         start = time()
-        all_results[sampler.__name__] = cal.multirun(sampler, draws = 8000,tune = 1000,bcm_model = bcm_model_1,n_iterations = 5,n_jobs= n_jobs,initial_params = init_vals
+        all_results[sampler.__name__] = cal.multirun(sampler, draws = 8000,tune = 1000,bcm_model = bcm_model_1,n_iterations = 100,n_jobs= n_jobs,initial_params = init_vals
         )
         end = time()
         print("Metropolis walltime:\n", end - start)
