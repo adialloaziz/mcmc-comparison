@@ -71,11 +71,11 @@ def compute_min_Ess(
 def Sampling_calib(
         bcm_model : BayesianCompartmentalModel,
         mcmc_algo: str,
-        initial_params: dict | list,
-        draws = 1000,
-        tune=100,
-        chains = 1,
-        cores = 1,
+        initial_params: dict | list |None,
+        draws : int,
+        tune: int,
+        chains : int | None,
+        cores : int | None,
         # hmc_warmup = 1000,
                 ) -> list[InferenceData, float] :
 
@@ -103,27 +103,37 @@ def Sampling_calib(
             ll = numpyro.factor("ll", bcm_model.loglikelihood(**sampled))
 
         kernel = infer.NUTS(nmodel)
-        mcmc = infer.MCMC(kernel, num_warmup=tune, num_chains=4, num_samples=draws, progress_bar=False)
+        mcmc = infer.MCMC(kernel, num_warmup=tune, num_chains=chains, num_samples=draws, progress_bar=False)
         start = time.time()
 
         mcmc.run(random.PRNGKey(0), init_params=initial_params)
         end = time.time()
         Time = end - start
         idata = az.from_numpyro(mcmc)
-        mcmc.__init__
 
     else :
         with pm.Model() as model:
-
-            # This is all you need - a single call to use_model
+            
             variables = epm.use_model(bcm_model)
 
-            # Now call a sampler using the variables from use_model
-            # See the PyMC docs for more details
             step_kwargs = {} #dict(variables,proposal_dist = pm.NormalProposal)
             step = mcmc_algo(**step_kwargs)
             start = time.time()
-            idata = pm.sample(step= step,
+
+            if sampler_name == "sample_smc": ## SEQUENTIAL MONTE CARLO SAMPLING
+
+                idata = pm.sample_smc(  kernel=pm.smc.IMH, 
+                                        start = None, 
+                                        draws=draws,
+                                        chains=chains,
+                                        threshold = 0.1,
+                                        correlation_threshold=0.5,
+                                        progressbar=False,
+                                        cores=chains,
+                                    
+                                     )
+            else :  
+                idata = pm.sample(step= step,
                                 initvals = initial_params,
                                 draws=draws,
                                 tune = tune ,
@@ -172,6 +182,8 @@ from joblib import Parallel, delayed
 
 def multirun(sampler : str, 
             draws : int,
+            chains : int | None,
+            cores : int | None,
             tune : int,
             bcm_model: BayesianCompartmentalModel,
             n_iterations : int,
@@ -188,15 +200,15 @@ def multirun(sampler : str,
                 initial_params = initial_params,
                 draws = draws,
                 tune = tune,
-                cores = 4,
-                chains = 4,
+                cores = cores,
+                chains = chains,
                 )
         results = Compute_metrics(
                 mcmc_algo = sampler,
                 idata = idata,
                 Time = Time,
                 draws = draws, 
-                chains = 4,
+                chains = chains,
                 tune = tune,
                     )
             
@@ -213,6 +225,7 @@ def multirun(sampler : str,
     results = Parallel(n_jobs=n_jobs, prefer=backend,timeout=1000)(delayed(run_analysis)() for i in iterations)
 
     return pd.concat(results, ignore_index=True)
+
 
 
 def plot_comparison_bars(results_df):

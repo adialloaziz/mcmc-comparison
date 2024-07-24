@@ -75,11 +75,11 @@ def model2():
     from datetime import datetime
     model_config = {
     "compartments": ("S", "E","I","R"), # "Ip","Ic", "Is", "R"),
-    "population": 1e6,
+    "population": 10500,
     "seed": 100.0,
     "end_time": datetime(2020, 12, 8),
     }
-    #----We add the compartiment Exposed to the SIR model
+    #----We've added the compartiment Exposed to the SIR model
     m = CompartmentalModel(
         times=(datetime(2019, 12, 8), model_config["end_time"]),
         compartments=model_config["compartments"],
@@ -97,7 +97,7 @@ def model2():
     m.add_infection_frequency_flow(name="infection", contact_rate = 1., source = "S", dest ="E")
     m.add_transition_flow('progression', 1.0 / Parameter('incubation_period'), source = 'E', dest='I')
     m.add_transition_flow('recovery', 1.0 / Parameter('infectious_period'), source = 'I', dest = 'R')
-    strata = [0, 15, 45, 65] 
+    strata = [i for i in range(0, 65, 5)] 
     #All the compartments are age-strafied
     age_strat = Stratification(name='age', strata=strata,compartments=model_config["compartments"])
     #age_strat.set_population_split({"0": .7, "15": 0.3})
@@ -112,6 +112,8 @@ def model2():
     for strat in strata:
 
         m.request_output_for_flow(f"incX{str(strat)}", "infection", source_strata={"age": str(strat)}, save_results=True)
+    
+    m.request_output_for_compartments(name="incidence", compartments=["I"])
 
 
     return m
