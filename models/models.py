@@ -1,6 +1,15 @@
 # In this file we build all the models we want to calibrate
 from summer2 import CompartmentalModel, Stratification, AgeStratification
 from summer2.parameters import Parameter
+from datetime import datetime
+from pathlib import Path
+from estival.model import BayesianCompartmentalModel
+from calibs_utilities import get_all_priors, get_targets
+import pandas as pd
+
+import estival.targets as est
+import estival.priors as esp
+
 # from typing import List, Dict
 
 
@@ -70,21 +79,46 @@ def model1():
     )
     return m
 
+def bcm_sir():
+    BASE_PATH = Path(__file__).parent.parent.resolve()
+    DATA_PATH = BASE_PATH / "data"
+    targets_yml = Path(DATA_PATH/"target_yml.yml")
+    #Names of parameters and their ranges
+    params = {
+            "contact_rate": (0.0,1.0),
+            "recovery_rate": (0.0,1.0)
+            }
+    targets = get_targets(targets_yml) 
+    priors = get_all_priors(params)
+        
+    #_______Model definition : A bayesian compartmental model with estival/SUMMER_____
+    model_1 = model1()        
+    #________________Default parameters____________
+    parameters = {
+            "contact_rate": 0.2,
+            "recovery_rate": 0.1,
+            #"active_cases_dispersion": 0.5,
+        }
+    model_1 = model1()
+    bcm_model_1 = BayesianCompartmentalModel(model_1, parameters, priors, targets)  
 
-def model2():
-    from datetime import datetime
-    model_config = {
-    "compartments": ("S", "E","I","R"), # "Ip","Ic", "Is", "R"),
-    "population": 10500,
-    "seed": 100.0,
-    "end_time": datetime(2020, 12, 8),
-    }
+    return bcm_model_1
+
+def model2(
+        model_config: dict = 
+        {"compartments": ("S", "E","I","R"), # "Ip","Ic", "Is", "R"),
+        "population": 56490045, #England population size 2021
+        "seed": 1000.0,
+        "start": datetime(2020, 8, 1),
+        "end_time": datetime(2020, 11, 30),
+    },
+           ):
     #----We've added the compartiment Exposed to the SIR model
     m = CompartmentalModel(
-        times=(datetime(2019, 12, 8), model_config["end_time"]),
+        times=(datetime(2020, 6, 1), model_config["end_time"]),
         compartments=model_config["compartments"],
         infectious_compartments=("I"), #"Ip","Ic", "Is",),
-        ref_date=datetime(2019, 12, 8)
+        ref_date=datetime(2019, 12, 31)
     )
     m.set_initial_population(
         distribution=
@@ -100,7 +134,9 @@ def model2():
     strata = [i for i in range(0, 65, 5)] 
     #All the compartments are age-strafied
     age_strat = Stratification(name='age', strata=strata,compartments=model_config["compartments"])
-    #age_strat.set_population_split({"0": .7, "15": 0.3})
+    age_proportion = [0.055, 0.06, 0.06, 0.057, 0.06, 0.066, 0.07, 0.06, 0.063, 0.064, 0.069, 0.067, 0.242]
+    age_strat.set_population_split({f"{i}": val for i, val in zip(range(0,65,5),age_proportion)}
+            )
     # Stratify the model first
     #We suppose that only the susceptibility varies by age
     age_suscept = {str(catgr): Parameter(f"age_transmission_rate_{str(catgr)}") for catgr in strata } 
@@ -118,67 +154,56 @@ def model2():
 
     return m
 
+def bcm_seir_age_strat():
+    #------DATA-MANAGEMENT------------------------
+    BASE_PATH = Path(__file__).parent.parent.resolve()
+    DATA_PATH = BASE_PATH / "data"
+    df = pd.read_csv(DATA_PATH/"new_cases_England_2020.csv")
+    df["date"] = pd.to_datetime(df.date)
+    df.set_index(["age","date"], inplace=True)
 
-    
+    ages_labels = [f"{i:02}_{i+4:02}" for i in range(0,60, 5)] + ["60+"]
+    targets_data = dict()
+    for age in ages_labels:
+        targets_data[age] = df.loc[age]
+
+    ages_labels = [f"{i:02}_{i+4:02}" for i in range(0,60, 5)] + ["60+"]
+    age_strat = [f"{i}" for i in range(0,65,5)]
+
+    #Default parameters
+    parameters = {
+    'age_transmission_rate_'+ str(age) : 0.25 for age in age_strat
+        }
+    parameters['incubation_period']= 6
+    parameters['infectious_period'] = 7.3
 
 
+    #The fitted period is Aug 2020 to Nov 2020
+    # We define a normal target with fixed std for each age catergory
+    # We rolle the data for 14 day to discard fluctuations
+    targets = [
+                est.NormalTarget("incX"+str(age), df.loc[age_cat]["Aug 2020":"Nov 19 2020"].rolling(14).mean().iloc[14:]["cases"],
+                                150) for age_cat, age in zip(ages_labels, age_strat)
+            ]
+    # A uniform prior is defined for all the transmission rate
+    params = {param: (0.0,1.0) for param in (parameters.keys())}
+    priors = []
+    # A normal prior for the incubation and infectious periods
+    normal_priors = [ 
+        esp.TruncNormalPrior("incubation_period",5.4, 3.0, (1,15)),
+        esp.TruncNormalPrior("infectious_period",7.3, 2.0, (1,15)),
+        ]
+    uniform_priors = get_all_priors(params)
+    priors = normal_priors + uniform_priors[:-2]
 
+    model_config ={"compartments": ("S", "E","I","R"), # "Ip","Ic", "Is", "R"),
+        "population": 56490045, #England population size 2021
+        "seed": 100.0,
+        "start": datetime(2020,8,1),
+        "end_time": datetime(2020, 11, 30)}
 
-#
+    model_2 = model2(model_config)
+    #Defining  a Bayesian Compartmental Model
 
-# def Build_model(
-#     config: dict,
-#     compartments: List[str],
-#     #latent_compartments: List[str],
-#     infectious_compartments: List[str],
-#     #age_strata: List[int],
-#     #fixed_params: Dict[str, any],
-    
-# ) -> CompartmentalModel:
-#     """
-#     Builds and returns a compartmental model for epidemiological studies, incorporating
-#     various flows and stratifications based on age, organ status, and treatment outcomes.
-
-#     Args:
-#         compartments: List of compartment names in the model.
-#         latent_compartments: List of latent compartment names.
-#         infectious_compartments: List of infectious compartment names.
-#         age_strata: List of age groups for stratification.
-#         time_start: Start time for the model simulation.
-#         time_end: End time for the model simulation.
-#         time_step: Time step for the model simulation.
-#         fixed_params: Dictionary of parameters with fixed values.
-
-#     Returns:
-#         A configured CompartmentalModel object.
-#     """
-
-#     model = CompartmentalModel(
-#         times=(0.0, config["end_time"]),
-#         compartments = compartments,
-#         infectious_compartments = infectious_compartments,
-#         timestep = config["timestep"]
-#     )
-
-#     model.set_initial_population(
-#         distribution=
-#         {
-#             "susceptible": config["population"] - config["seed"], 
-#             "infectious": config["seed"],
-#         },
-#     )
-    
-#     model.add_infection_frequency_flow(
-#         name="infection", 
-#         contact_rate=Parameter("contact_rate"), 
-#         source="susceptible", 
-#         dest="infectious",
-#     )
-#     model.add_transition_flow(
-#         name="recovery",
-#         fractional_rate=Parameter("recovery"),
-#         source="infectious",
-#         dest="recovered",
-#     )
-    
-#     return model
+    bcm_model_2 = BayesianCompartmentalModel(model_2, parameters, priors,targets)
+    return bcm_model_2
