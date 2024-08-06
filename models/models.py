@@ -6,6 +6,7 @@ from pathlib import Path
 from estival.model import BayesianCompartmentalModel
 from calibs_utilities import get_all_priors, get_targets
 import pandas as pd
+import numpy as np
 
 import estival.targets as est
 import estival.priors as esp
@@ -108,7 +109,7 @@ def model2(
         model_config: dict = 
         {"compartments": ("S", "E","I","R"), # "Ip","Ic", "Is", "R"),
         "population": 56490045, #England population size 2021
-        "seed": 1000.0,
+        "seed": 70.0,
         "start": datetime(2020, 8, 1),
         "end_time": datetime(2020, 11, 30),
     },
@@ -147,14 +148,19 @@ def model2(
     m.stratify_with(age_strat)
     for strat in strata:
 
-        m.request_output_for_flow(f"incX{str(strat)}", "infection", source_strata={"age": str(strat)}, save_results=True)
+        m.request_output_for_flow(f"IXage_{str(strat)}", "infection", source_strata={"age": str(strat)}, save_results=True)
     
     m.request_output_for_compartments(name="incidence", compartments=["I"])
 
 
     return m
 
-def bcm_seir_age_strat():
+def bcm_seir_age_strat(model_config: dict = 
+        {"compartments": ("S", "E","I","R"), # "Ip","Ic", "Is", "R"),
+        "population": 56490045, #England population size 2021
+        "seed": 70.0,
+        "start": datetime(2020, 8, 1),
+        "end_time": datetime(2020, 11, 30)}):
     #------DATA-MANAGEMENT------------------------
     BASE_PATH = Path(__file__).parent.parent.resolve()
     DATA_PATH = BASE_PATH / "data"
@@ -162,10 +168,10 @@ def bcm_seir_age_strat():
     df["date"] = pd.to_datetime(df.date)
     df.set_index(["age","date"], inplace=True)
 
-    ages_labels = [f"{i:02}_{i+4:02}" for i in range(0,60, 5)] + ["60+"]
-    targets_data = dict()
-    for age in ages_labels:
-        targets_data[age] = df.loc[age]
+    # ages_labels = [f"{i:02}_{i+4:02}" for i in range(0,60, 5)] + ["60+"]
+    # targets_data = dict()
+    # for age in ages_labels:
+    #     targets_data[age] = df.loc[age]
 
     ages_labels = [f"{i:02}_{i+4:02}" for i in range(0,60, 5)] + ["60+"]
     age_strat = [f"{i}" for i in range(0,65,5)]
@@ -181,9 +187,11 @@ def bcm_seir_age_strat():
     #The fitted period is Aug 2020 to Nov 2020
     # We define a normal target with fixed std for each age catergory
     # We rolle the data for 14 day to discard fluctuations
+    # esp.UniformPrior("IXage_"+str(age)+"_disp",(0.1, 2000))
     targets = [
-                est.NormalTarget("incX"+str(age), df.loc[age_cat]["Aug 2020":"Nov 19 2020"].rolling(14).mean().iloc[14:]["cases"],
-                                150) for age_cat, age in zip(ages_labels, age_strat)
+                est.TruncatedNormalTarget("IXage_"+str(age), df.loc[age_cat]["Aug 2020":"Nov 19 2020"].rolling(14).mean().iloc[14:]["cases"],
+                                          (0.0,np.inf),
+                                1200) for age_cat, age in zip(ages_labels, age_strat)
             ]
     # A uniform prior is defined for all the transmission rate
     params = {param: (0.0,1.0) for param in (parameters.keys())}
@@ -196,14 +204,8 @@ def bcm_seir_age_strat():
     uniform_priors = get_all_priors(params)
     priors = normal_priors + uniform_priors[:-2]
 
-    model_config ={"compartments": ("S", "E","I","R"), # "Ip","Ic", "Is", "R"),
-        "population": 56490045, #England population size 2021
-        "seed": 100.0,
-        "start": datetime(2020,8,1),
-        "end_time": datetime(2020, 11, 30)}
-
     model_2 = model2(model_config)
     #Defining  a Bayesian Compartmental Model
 
-    bcm_model_2 = BayesianCompartmentalModel(model_2, parameters, priors,targets)
+    bcm_model_2 = BayesianCompartmentalModel(model_2, parameters, priors,targets, extra_ll=False)
     return bcm_model_2

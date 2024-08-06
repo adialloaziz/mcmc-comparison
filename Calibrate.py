@@ -70,12 +70,13 @@ def compute_min_Ess(
 def Sampling_calib(
         bcm_model : BayesianCompartmentalModel,
         mcmc_algo: str,
-        initial_params: dict | list |None,
         draws : int,
         tune: int,
         chains : int | None,
         cores : int | None,
         nmodel: Optional[Callable] = None,
+        initial_params: Optional[dict | list] = None,
+
         # hmc_warmup = 1000,
                 ) -> list[InferenceData, float] :
 
@@ -193,7 +194,7 @@ def Single_analysis(
             cores : int | None,
             tune : int,
             bcm_model: BayesianCompartmentalModel,
-            initial_params: dict,
+            initial_params: Optional[dict | list] = None,
             nmodel: Optional[Callable] = None,
             )->pd.DataFrame:
     
@@ -236,7 +237,7 @@ def multirun(sampler : str,
             bcm_model: BayesianCompartmentalModel,
             n_iterations : int,
             n_jobs: int,
-            initial_params: dict,
+            initial_params: Optional[dict] = None,
             nmodel: Optional[Callable] = None,
             )->pd.DataFrame:
 
