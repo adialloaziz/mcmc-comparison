@@ -110,16 +110,16 @@ def model2(
         {"compartments": ("S", "E","I","R"), # "Ip","Ic", "Is", "R"),
         "population": 56490045, #England population size 2021
         "seed": 70.0,
-        "start": datetime(2020, 8, 1),
+        "start_time": datetime(2020, 6, 1),
         "end_time": datetime(2020, 11, 30),
     },
            ):
     #----We've added the compartiment Exposed to the SIR model
     m = CompartmentalModel(
-        times=(datetime(2020, 6, 1), model_config["end_time"]),
+        times=(model_config["start_time"], model_config["end_time"]),
         compartments=model_config["compartments"],
         infectious_compartments=("I"), #"Ip","Ic", "Is",),
-        ref_date=datetime(2019, 12, 31)
+        ref_date=datetime(2020, 6, 1)
     )
     m.set_initial_population(
         distribution=
@@ -180,21 +180,17 @@ def bcm_seir_age_strat(model_config: dict =
     parameters = {
     'age_transmission_rate_'+ str(age) : 0.25 for age in age_strat
         }
+    #A common calibrated dispersion for all target
+    # parameters["inc_disp"] = 1000.
+
     parameters['incubation_period']= 6
     parameters['infectious_period'] = 7.3
 
+    
 
-    #The fitted period is Aug 2020 to Nov 2020
-    # We define a normal target with fixed std for each age catergory
-    # We rolle the data for 14 day to discard fluctuations
-    # esp.UniformPrior("IXage_"+str(age)+"_disp",(0.1, 2000))
-    targets = [
-                est.TruncatedNormalTarget("IXage_"+str(age), df.loc[age_cat]["Aug 2020":"Nov 19 2020"].rolling(14).mean().iloc[14:]["cases"],
-                                          (0.0,np.inf),
-                                1200) for age_cat, age in zip(ages_labels, age_strat)
-            ]
+    
     # A uniform prior is defined for all the transmission rate
-    params = {param: (0.0,1.0) for param in (parameters.keys())}
+    params = {param: (0.0,1.0) for param in parameters.keys() if param not in ("inc_disp","incubation_period","infectious_period")}
     priors = []
     # A normal prior for the incubation and infectious periods
     normal_priors = [ 
@@ -202,10 +198,23 @@ def bcm_seir_age_strat(model_config: dict =
         esp.TruncNormalPrior("infectious_period",7.3, 2.0, (1,15)),
         ]
     uniform_priors = get_all_priors(params)
-    priors = normal_priors + uniform_priors[:-2]
+    # uniform_priors.append(esp.UniformPrior("inc_disp",(0.1, 2000)))
+
+    priors = normal_priors + uniform_priors #[:-2]
+
+    #The fitted period is Aug 2020 to Nov 2020
+    # We define a normal target with fixed std for each age catergory
+    # We rolle the data for 14 day to discard fluctuations
+    # Inc_disp = esp.UniformPrior("inc_disp",(0.1, 2000))
+    targets = [
+                est.TruncatedNormalTarget("IXage_"+str(age),
+                                        df.loc[age_cat]["Aug 2020":"Nov 2020"].rolling(14).mean().iloc[14:]["cases"],
+                                          (0.0,np.inf),
+                                1200) for age_cat, age in zip(ages_labels, age_strat)
+            ]
 
     model_2 = model2(model_config)
     #Defining  a Bayesian Compartmental Model
 
-    bcm_model_2 = BayesianCompartmentalModel(model_2, parameters, priors,targets, extra_ll=False)
+    bcm_model_2 = BayesianCompartmentalModel(model_2, parameters, priors,targets)
     return bcm_model_2

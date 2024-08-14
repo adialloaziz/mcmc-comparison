@@ -64,6 +64,7 @@ def compute_min_Ess(
     # Create DataFrame from the extracted data
     min_ess_df = pd.DataFrame(data, index=[0])
     return min_ess_df.values.min()
+
     
     
 
@@ -266,20 +267,24 @@ def multirun(sampler : str,
 
 def plot_comparison_bars(results_df):
     pd.options.plotting.backend = "matplotlib"
-    fig, axes = plt.subplots(1, 2, figsize=(10, 6))
+    fig, axes = plt.subplots(1, 3, figsize=(10, 5))
     ax = axes[0]
-    results_df.plot.bar(y="Ess_per_sec", x="Run", ax=ax, legend=False)
+    results_df.plot.bar(y="Ess_per_sec", x="Sampler", ax=ax, legend=False)
     ax.set_title("Ess_per_sec")
     ax.set_xlabel("")
     labels = ax.get_xticklabels()
-
     ax = axes[1]
-    results_df.plot.bar(y="Mean_Rhat", x="Run", ax=ax, legend=False)
-    ax.set_title(r"$\hat{R}$")
+    results_df.plot.bar(y="Rel_Ess", x="Sampler", ax=ax, legend=False)
+    ax.set_title("Relative ESS")
+    ax.set_xlabel("")
+    labels = ax.get_xticklabels()
+    ax = axes[2]
+    results_df.plot.bar(y="Rhat_max", x="Sampler", ax=ax, legend=False)
+    ax.set_title(r"Max $\hat{R}$")
     ax.set_xlabel("")
     ax.set_ylim(1)
     labels = ax.get_xticklabels()
-    plt.suptitle(f"Comparison MCMC runs", fontsize=12)
+    plt.suptitle(f"Sampler Comparison", fontsize=12)
     plt.tight_layout()
 
 
@@ -304,32 +309,10 @@ def group_summary(results_df):
     summary_means = pd.concat(sum_dict)
     #computing the pecentage of Mean rhat <= 1.1
     prcnt_success= pd.DataFrame()
-    prcnt_success["Mean rhat <= 1.1(%)"] = results_df.groupby('Sampler')['Mean_Rhat'].apply(lambda x: (x <= 1.1).mean() * 100)
+    prcnt_success["Rhat max <= 1.1(%)"] = results_df.groupby('Sampler')['Rhat_max'].apply(lambda x: (x <= 1.1).mean() * 100)
     prcnt_success["Mean time(s)"] = results_df.groupby('Sampler')['Time'].mean()
     return summary_means, prcnt_success
 
-# def compute_MSE(
-#         sampler_results: pd.DataFrame,
-#         true_posterior: pd.DataFrame,
-#         variable: str,
-#         )->pd.DataFrame:
-#     df = sampler_results.copy()
-#     #create a new column named "MSE" containing the mean squared error for each sampler
-#     df["MSE"] = 10
-#     for row in sampler_results.index:
-#         idata = sampler_results.Trace.loc[row]
-#         pred_posterior = pd.DataFrame(idata.posterior.to_dataframe()[variable].to_list())
-#         pred_posterior = pred_posterior.rename(columns={0:variable})
-
-#         # Ensure the DataFrames are aligned
-#         # true_sample, posterior_sample = true_sample.align(posterior_sample, join='inner', axis=1)
-#         squared_diff = (true_posterior[variable] - pred_posterior) ** 2
-#         df.MSE.loc[row] = squared_diff.mean().values
-
-#         # print("Mean Squared Error:", mse)
-
-    
-#     return df
 
 def fitting_test(idata, bcm, model):
     from estival.sampling.tools import likelihood_extras_for_samples

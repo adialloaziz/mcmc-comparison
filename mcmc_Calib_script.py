@@ -62,8 +62,8 @@ if __name__ == "__main__":
                       The multiple-run uses a parallel loop(joblib mapping) to accelerate the process"""
                       )
     parser.add_argument(
-                    "-apl","--application", type=int, choices=range(1,4), default = 1,
-                    help="""Specify wich application you want to run (1,2 or 3). Default is 1 the SIR"""
+                    "-apl","--application", type=int, choices=range(1,4), default = 2,
+                    help="""Specify wich application you want to run (1,2 or 3). Default is 2 the SEIR"""
                       )
 
     args = parser.parse_args()
@@ -73,7 +73,8 @@ if __name__ == "__main__":
     
         mp.set_start_method('forkserver')
 
-    
+    BASE_PATH = Path(__file__).parent.resolve()
+
     if args.application == 1 : #Runing analysis for application 1
         #Defining  a Bayesian Compartmental Model
         #Targets and priors are already defined
@@ -172,7 +173,14 @@ if __name__ == "__main__":
         #     pickle.dump(all_results, fp)
 
     if args.application == 2 : #Runing analysis for the SEIR age-stratified model
-        bcm_model_2 = bcm_seir_age_strat()
+        model_config = {"compartments": ("S", "E","I","R"), # "Ip","Ic", "Is", "R"),
+        "population": 56490045, #England population size 2021
+        "seed": 100.0,
+        "start_time": datetime(2020, 6, 1),
+        "end_time": datetime(2020, 11, 30)
+            }
+        bcm_model_2 = bcm_seir_age_strat(model_config)
+        model_2 = model2(model_config)
 
         ##____Uniform Initialisation for each chain_________
         chains = 4
@@ -183,5 +191,115 @@ if __name__ == "__main__":
             temp["infectious_period"] = np.random.uniform(1.,15.)
             init_vals.append(temp)
 
+        def nmodel_2():
+            unif_priors = list(bcm_model_2.parameters)[:-2]
+            sampled = {k:numpyro.sample(k, dist.Uniform(0.0,1.0)) for k in unif_priors}
+            #Adding the normal priors for the incubation and infectious periods
+            sampled["incubation_period"] = numpyro.sample("incubation_period", dist.TruncatedNormal(7.3, 2.0, low=1., high=14.))
+            sampled["infectious_period"] = numpyro.sample("infectious_period", dist.TruncatedNormal(5.4, 3.0, low=1., high=14.))
+            # Log-likelihood
+            disp_params = {k:v.ppf(0.5) for k,v in bcm_model_2.priors.items() if "_disp" in k}
+
+            log_likelihood = bcm_model_2.loglikelihood(**sampled | disp_params)
+
+            numpyro.factor("ll",log_likelihood)
+
+
+        #_______________Sampling____________________________
+        #_______Multiple Run______________________
+        all_results = dict()
+        start = time()
+        sampler = pm.sample_smc
+        all_results[sampler.__name__] = cal.multirun(
+        sampler, 
+        draws = 10000,
+        tune = 0,
+        chains=4,
+        cores=4, 
+        bcm_model = bcm_model_2,
+        n_iterations = 100,
+        n_jobs = 2,
+        )
+        end = time()
+        print("SMC Multi run elapsed time", end-start)
+
+
+        # #Storing our results in to pickle file
+        file_path = Path(BASE_PATH/"Results/Model_2/Multi_run_SMC.pkl")
+        with open(file_path, 'wb') as fp:
+            pickle.dump(all_results, fp)
+
+        sampler = pm.DEMetropolisZ
+        start = time()
+        all_results[sampler.__name__] = cal.multirun(
+        sampler, 
+        draws = 10000,
+        tune = 1000,
+        chains=4,
+        cores=4, 
+        bcm_model = bcm_model_2,
+        n_iterations = 100,
+        n_jobs = 2,
+        )
+        end = time()
+        print("DEMZ Multi run elapsed time", end-start)
+
+        with open(Path(BASE_PATH/"Results/Model_2/Multi_run_DEMZ.pkl"), 'wb') as fp:
+            pickle.dump(all_results, fp)
+        
+        
+        sampler = pm.Metropolis
+        start = time()
+        all_results[sampler.__name__] = cal.multirun(
+        sampler, 
+        draws = 10000,
+        tune = 1000,
+        chains=4,
+        cores=4, 
+        bcm_model = bcm_model_2,
+        n_iterations = 100,
+        n_jobs = 2,
+        )
+        end = time()
+        print("MH Multi run elapsed time", end-start)
+        with open(Path(BASE_PATH/"Results/Model_2/Multi_run_MH.pkl"), 'wb') as fp:
+            pickle.dump(all_results, fp)
+        
+        sampler = infer.NUTS
+
+        start = time()
+        all_results[sampler.__name__] = cal.multirun(
+        sampler, 
+        draws = 5000,
+        tune = 1000,
+        chains=4,
+        cores=4, 
+        bcm_model = bcm_model_2,
+        n_iterations = 100,
+        nmodel=nmodel_2,
+        n_jobs = 2,
+        )
+        end = time()
+        print("NUTS Multi run elapsed time", end-start)
+        with open(Path(BASE_PATH/"Results/Model_2/Multi_run_NUTS.pkl"), 'wb') as fp:
+            pickle.dump(all_results, fp)
+        
+        sampler = pm.DEMetropolis
+        start = time()
+        all_results[sampler.__name__] = cal.multirun(
+        sampler, 
+        draws = 10000,
+        tune = 1000,
+        chains=4,
+        cores=4, 
+        bcm_model = bcm_model_2,
+        n_iterations = 100,
+        n_jobs = 2,
+        )
+        end = time()
+        print("DEM Multi run elapsed time", end-start) 
+
+        with open(Path(BASE_PATH/"Results/Model_2/Multi_run_DEM.pkl"), 'wb') as fp:
+            pickle.dump(all_results, fp)
 
 
