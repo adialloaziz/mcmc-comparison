@@ -34,7 +34,6 @@ log/
 .ipynb_checkpoints
 
 # Produced results/outputs
-*.pkl
 Results/
 
 # IPython
@@ -45,3 +44,4 @@ ipython_config.py
 models/__pycache__/models.cpython-310.pyc
 
 models/__pycache__/models.cpython-310.pyc
+Results - Copy.rar
