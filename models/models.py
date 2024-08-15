@@ -109,7 +109,7 @@ def model2(
         model_config: dict = 
         {"compartments": ("S", "E","I","R"), # "Ip","Ic", "Is", "R"),
         "population": 56490045, #England population size 2021
-        "seed": 70.0,
+        # "seed": Parameter("seed"),
         "start_time": datetime(2020, 6, 1),
         "end_time": datetime(2020, 11, 30),
     },
@@ -124,14 +124,17 @@ def model2(
     m.set_initial_population(
         distribution=
         {
-            "S": model_config["population"] - model_config["seed"], 
-            "E": model_config["seed"],
+            "S": model_config["population"] - Parameter("seed"), 
+            "I": Parameter("seed"),
         },
     )
     #m.add_transition_flow()
+    # fixed parameters
+    incubation_period = 5.4
+    infectious_period = 7.3
     m.add_infection_frequency_flow(name="infection", contact_rate = 1., source = "S", dest ="E")
-    m.add_transition_flow('progression', 1.0 / Parameter('incubation_period'), source = 'E', dest='I')
-    m.add_transition_flow('recovery', 1.0 / Parameter('infectious_period'), source = 'I', dest = 'R')
+    m.add_transition_flow('progression', 1.0 / incubation_period, source = 'E', dest='I')
+    m.add_transition_flow('recovery', 1.0 / infectious_period, source = 'I', dest = 'R')
     strata = [i for i in range(0, 65, 5)] 
     #All the compartments are age-strafied
     age_strat = Stratification(name='age', strata=strata,compartments=model_config["compartments"])
@@ -158,7 +161,7 @@ def model2(
 def bcm_seir_age_strat(model_config: dict = 
         {"compartments": ("S", "E","I","R"), # "Ip","Ic", "Is", "R"),
         "population": 56490045, #England population size 2021
-        "seed": 70.0,
+        # "seed": Parameter("seed"),
         "start": datetime(2020, 8, 1),
         "end_time": datetime(2020, 11, 30)}):
     #------DATA-MANAGEMENT------------------------
@@ -176,31 +179,30 @@ def bcm_seir_age_strat(model_config: dict =
     ages_labels = [f"{i:02}_{i+4:02}" for i in range(0,60, 5)] + ["60+"]
     age_strat = [f"{i}" for i in range(0,65,5)]
 
-    #Default parameters
     parameters = {
     'age_transmission_rate_'+ str(age) : 0.25 for age in age_strat
         }
-    #A common calibrated dispersion for all target
-    # parameters["inc_disp"] = 1000.
+    #Default parameters
+    parameters["seed"] = 100.
 
-    parameters['incubation_period']= 6
+    parameters['incubation_period']= 5.4
     parameters['infectious_period'] = 7.3
 
     
 
     
     # A uniform prior is defined for all the transmission rate
-    params = {param: (0.0,1.0) for param in parameters.keys() if param not in ("inc_disp","incubation_period","infectious_period")}
-    priors = []
-    # A normal prior for the incubation and infectious periods
-    normal_priors = [ 
-        esp.TruncNormalPrior("incubation_period",5.4, 3.0, (1,15)),
-        esp.TruncNormalPrior("infectious_period",7.3, 2.0, (1,15)),
-        ]
+    params = {param: (0.0,1.0) for param in parameters.keys() if param not in ("seed","incubation_period","infectious_period")}
+    priors_seed = [esp.UniformPrior("seed",(1,1000))]
+    # # A normal prior for the incubation and infectious periods
+    # normal_priors = [ 
+    #     esp.TruncNormalPrior("incubation_period",5.4, 3.0, (1,15)),
+    #     esp.TruncNormalPrior("infectious_period",7.3, 2.0, (1,15)),
+    #     ]
     uniform_priors = get_all_priors(params)
     # uniform_priors.append(esp.UniformPrior("inc_disp",(0.1, 2000)))
 
-    priors = normal_priors + uniform_priors #[:-2]
+    priors = priors_seed + uniform_priors #[:-2]
 
     #The fitted period is Aug 2020 to Nov 2020
     # We define a normal target with fixed std for each age catergory
