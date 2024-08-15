@@ -34,14 +34,14 @@ import multiprocessing as mp
 import platform
 from time import time 
 
-
+from datetime import datetime
 
 if __name__ == "__main__":
     if platform.system() != "Windows":
          mp.set_start_method('forkserver')
 
     BASE_PATH = Path(__file__).parent.resolve()
-
+    today_analysis = datetime.today().strftime('%Y-%m-%d_%H-%M-%S')
      #------------------Build a simple SIR MODEL------------
     def build_model():
         sir_model = CompartmentalModel([0.0,100.0],["S","I","R"],["I"])
@@ -120,7 +120,8 @@ if __name__ == "__main__":
 
 
     #Storing our results in to pickle file
-    Dir_path = Path(BASE_PATH/"Results/Reverse_Ingineering/")
+    output_root_dir = Path.home() / "sh30/users/rragonnet/outputs/"
+    Dir_path = Path(output_root_dir/today_analysis+"Results/Reverse_Ingineering/")
     Dir_path.mkdir(parents=True, exist_ok=True)
     file_path = Dir_path/"Multi_run_SMC.pkl"
     with open(file_path, 'wb') as fp:
@@ -141,7 +142,7 @@ if __name__ == "__main__":
     # end = time()
     # print("DEMZ Multi run elapsed time", end-start)
 
-    # with open(Path(BASE_PATH/"Results/Reverse_Ingineering/Multi_run_DEMZ.pkl"), 'wb') as fp:
+    # with open(Dir_path/"Multi_run_SMC_DEMZ.pkl", 'wb') as fp:
     #     pickle.dump(all_results, fp)
     
     
