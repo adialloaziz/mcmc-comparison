@@ -107,13 +107,13 @@ if __name__ == "__main__":
     sampler = pm.sample_smc
     all_results[sampler.__name__] = cal.multirun(
     sampler, 
-    draws = 500,
+    draws = 10000,
     tune = 0,
     chains=4,
     cores=4, 
     bcm_model = refit_bcm,
-    n_iterations = 4,
-    n_jobs = 2,
+    n_iterations = 100,
+    n_jobs = 4,
     )
     end = time()
     print("SMC Multi run elapsed time", end-start)
@@ -127,82 +127,82 @@ if __name__ == "__main__":
     with open(file_path, 'wb') as fp:
         pickle.dump(all_results, fp)
 
-    # sampler = pm.DEMetropolisZ
-    # start = time()
-    # all_results[sampler.__name__] = cal.multirun(
-    # sampler, 
-    # draws = 100,
-    # tune = 1000,
-    # chains=4,
-    # cores=4, 
-    # bcm_model = refit_bcm,
-    # n_iterations = 100,
-    # n_jobs = 2,
-    # )
-    # end = time()
-    # print("DEMZ Multi run elapsed time", end-start)
+    sampler = pm.DEMetropolisZ
+    start = time()
+    all_results[sampler.__name__] = cal.multirun(
+    sampler, 
+    draws = 10000,
+    tune = 1000,
+    chains=4,
+    cores=4, 
+    bcm_model = refit_bcm,
+    n_iterations = 100,
+    n_jobs = 4,
+    )
+    end = time()
+    print("DEMZ Multi run elapsed time", end-start)
 
-    # with open(Dir_path/"Multi_run_SMC_DEMZ.pkl", 'wb') as fp:
-    #     pickle.dump(all_results, fp)
+    with open(Dir_path/"Multi_run_SMC_DEMZ.pkl", 'wb') as fp:
+        pickle.dump(all_results, fp)
     
     
-    # sampler = pm.Metropolis
-    # start = time()
+    sampler = pm.Metropolis
+    start = time()
 
-    # all_results[sampler.__name__] = cal.multirun(
-    # sampler, 
-    # draws = 10000,
-    # tune = 1000,
-    # chains=4,
-    # cores=4, 
-    # bcm_model = refit_bcm,
-    # n_iterations = 100,
-    # n_jobs = 2,
-    # )
-    # end = time()
-    # print("MH Multi run elapsed time", end-start)
-    # with open(Path(BASE_PATH/"Results/Reverse_Ingineering/Multi_run_MH.pkl"), 'wb') as fp:
-    #     pickle.dump(all_results, fp)
+    all_results[sampler.__name__] = cal.multirun(
+    sampler, 
+    draws = 10000,
+    tune = 1000,
+    chains=4,
+    cores=4, 
+    bcm_model = refit_bcm,
+    n_iterations = 100,
+    n_jobs = 4,
+    )
+    end = time()
+    print("MH Multi run elapsed time", end-start)
+    with open(Dir_path/"Multi_run_SMC_DEMZ_MH.pkl", 'wb') as fp:
+        pickle.dump(all_results, fp)
 
-    # def nmodel():
-    #     sampled = {"contact_rate":numpyro.sample("contact_rate", dist.Uniform(0.0,1.0))}
-    #     ll = numpyro.factor("ll", refit_bcm.loglikelihood(**sampled))
+    def nmodel():
+        sampled = {"contact_rate":numpyro.sample("contact_rate", dist.Uniform(0.0,1.0))}
+        ll = numpyro.factor("ll", refit_bcm.loglikelihood(**sampled))
     
-    # sampler = infer.NUTS
+    sampler = infer.NUTS
 
-    # start = time()
-    # all_results[sampler.__name__] = cal.multirun(
-    # sampler, 
-    # draws = 5000,
-    # tune = 1000,
-    # chains=4,
-    # cores=4, 
-    # bcm_model = refit_bcm,
-    # n_iterations = 100,
-    # nmodel=nmodel,
-    # n_jobs = 2,
-    # )
-    # end = time()
-    # print("NUTS Multi run elapsed time", end-start)
-    # with open(Path(BASE_PATH/"Results/Reverse_Ingineering/Multi_run_NUTS.pkl"), 'wb') as fp:
-    #     pickle.dump(all_results, fp)
+    start = time()
+    all_results[sampler.__name__] = cal.multirun(
+    sampler, 
+    draws = 10000,
+    tune = 1000,
+    chains=4,
+    cores=4, 
+    bcm_model = refit_bcm,
+    n_iterations = 100,
+    nmodel=nmodel,
+    n_jobs = 4,
+    )
+    end = time()
+    print("NUTS Multi run elapsed time", end-start)
+    with open(Dir_path/"Multi_run_SMC_DEMZ_MH_NUTS.pkl", 'wb') as fp:
+        pickle.dump(all_results, fp)
     
-    # sampler = pm.DEMetropolis
-    # start = time()
-    # all_results[sampler.__name__] = cal.multirun(
-    # sampler, 
-    # draws = 10000,
-    # tune = 1000,
-    # chains=4,
-    # cores=4, 
-    # bcm_model = refit_bcm,
-    # n_iterations = 100,
-    # n_jobs = 2,
-    # )
-    # end = time()
-    # print("DEM Multi run elapsed time", end-start) 
+    sampler = pm.DEMetropolis
+    start = time()
+    all_results[sampler.__name__] = cal.multirun(
+    sampler, 
+    draws = 10000,
+    tune = 1000,
+    chains=4,
+    cores=4, 
+    bcm_model = refit_bcm,
+    n_iterations = 100,
+    n_jobs = 4,
+    )
+    end = time()
+    print("DEM Multi run elapsed time", end-start) 
 
-    # with open(Path(BASE_PATH/"Results/Reverse_Ingineering/Multi_run_DEM.pkl"), 'wb') as fp:
-    #     pickle.dump(all_results, fp)
+    with open(Dir_path/"Multi_run_all.pkl", 'wb') as fp:
+        pickle.dump(all_results, fp)
 
     
