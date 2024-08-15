@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
     #Storing our results in to pickle file
     output_root_dir = Path.home() / "sh30/users/rragonnet/outputs/"
-    Dir_path = Path(output_root_dir/today_analysis+"Results/Reverse_Ingineering/")
+    Dir_path = Path(output_root_dir/f"{today_analysis}_Results/Reverse_Ingineering/")
     Dir_path.mkdir(parents=True, exist_ok=True)
     file_path = Dir_path/"Multi_run_SMC.pkl"
     with open(file_path, 'wb') as fp:
