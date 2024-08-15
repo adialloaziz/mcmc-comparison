@@ -120,7 +120,8 @@ if __name__ == "__main__":
 
 
     #Storing our results in to pickle file
-    Dir_path = Path(BASE_PATH/"Results/Reverse_Ingineering/").mkdir(parents=True, exist_ok=True)
+    Dir_path = Path(BASE_PATH/"Results/Reverse_Ingineering/")
+    Dir_path.mkdir(parents=True, exist_ok=True)
     file_path = Dir_path/"Multi_run_SMC.pkl"
     with open(file_path, 'wb') as fp:
         pickle.dump(all_results, fp)
