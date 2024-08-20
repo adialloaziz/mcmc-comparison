@@ -192,8 +192,9 @@ def bcm_seir_age_strat(model_config: dict =
 
     
     # A uniform prior is defined for all the transmission rate
-    params = {param: (0.0,1.0) for param in parameters.keys() if param not in ("seed","incubation_period","infectious_period")}
-    priors_seed = [esp.UniformPrior("seed",(1,1000))]
+    params = {param: (0.0,0.6) for param in parameters.keys() if param not in ("seed","incubation_period","infectious_period")}
+    # params = {"age_transmission_rate_0": (0.0000001,.8)}
+    priors_seed = [esp.UniformPrior("seed",(1,1200))]
     # # A normal prior for the incubation and infectious periods
     # normal_priors = [ 
     #     esp.TruncNormalPrior("incubation_period",5.4, 3.0, (1,15)),
@@ -210,8 +211,8 @@ def bcm_seir_age_strat(model_config: dict =
     # Inc_disp = esp.UniformPrior("inc_disp",(0.1, 2000))
     targets = [
                 est.TruncatedNormalTarget("IXage_"+str(age),
-                                        df.loc[age_cat]["Aug 2020":"Nov 2020"].rolling(14).mean().iloc[14:]["cases"],
-                                          (0.0,np.inf),
+                                        df.loc[age_cat]["Oct 2020":"Nov 2020"].rolling(14).mean().iloc[14:]["cases"],
+                                          (0.0,500000),
                                 1200) for age_cat, age in zip(ages_labels, age_strat)
             ]
 
