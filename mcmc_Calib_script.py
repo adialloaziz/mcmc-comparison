@@ -186,11 +186,10 @@ if __name__ == "__main__":
         ##____Uniform Initialisation for each chain_________
         chains = 4
         init_vals = []
-        # for c in range(chains):
-        #     temp = {param: np.random.uniform(0.0,1.0) for param in list(bcm_seir_age_strat.parameters.keys())[:-2]}
-        #     temp["incubation_period"] = np.random.uniform(1.,15.) 
-        #     temp["infectious_period"] = np.random.uniform(1.,15.)
-        #     init_vals.append(temp)
+        for c in range(chains):
+            temp = {param: np.random.uniform(0.0,1.0) for param in list(bcm_seir_age_strat.parameters.keys())[:-2]}
+            temp["seed"] = np.random.uniform(1.,1200) 
+            init_vals.append(temp)
 
         def nmodel_2():
             unif_priors = list(bcm_model_2.parameters)[:-3]
@@ -212,25 +211,25 @@ if __name__ == "__main__":
         #_______________Sampling____________________________
 
         all_results = dict()
-        start = time()
-        sampler = pm.sample_smc
-        all_results[sampler.__name__] = cal.multirun(
-        sampler, 
-        draws = 10000,
-        tune = 0,
-        chains=4,
-        cores=4, 
-        bcm_model = bcm_model_2,
-        n_iterations = 100,
-        n_jobs = 4,
-        )
-        end = time()
-        print("SMC Multi run elapsed time", end-start)
+        # start = time()
+        # sampler = pm.sample_smc
+        # all_results[sampler.__name__] = cal.multirun(
+        # sampler, 
+        # draws = 10000,
+        # tune = 0,
+        # chains=4,
+        # cores=4, 
+        # bcm_model = bcm_model_2,
+        # n_iterations = 100,
+        # n_jobs = 3,
+        # )
+        # end = time()
+        # print("SMC Multi run elapsed time", end-start)
 
 
         #Storing our results in to pickle file
-        output_root_dir = Path.home() / "sh30/users/rragonnet/outputs/"
-        # output_root_dir = BASE_PATH / "Results/" #If I'm on my own computer 
+        # output_root_dir = Path.home() / "sh30/users/rragonnet/outputs/"
+        output_root_dir = BASE_PATH / "Results/"
 
         Dir_path = Path(output_root_dir/f"{today_analysis}_Results/Model_2/")
         Dir_path.mkdir(parents=True, exist_ok=True)
@@ -238,23 +237,23 @@ if __name__ == "__main__":
         # with open(file_path, 'wb') as fp:
         #     pickle.dump(all_results, fp)
 
-        sampler = pm.DEMetropolisZ
-        start = time()
-        all_results[sampler.__name__] = cal.multirun(
-        sampler, 
-        draws = 10000,
-        tune = 1000,
-        chains=4,
-        cores=4, 
-        bcm_model = bcm_model_2,
-        n_iterations = 100,
-        n_jobs = 4,
-        )
-        end = time()
-        print("DEMZ Multi run elapsed time", end-start)
+        # sampler = pm.DEMetropolisZ
+        # start = time()
+        # all_results[sampler.__name__] = cal.multirun(
+        # sampler, 
+        # draws = 10000,
+        # tune = 1000,
+        # chains=4,
+        # cores=4, 
+        # bcm_model = bcm_model_2,
+        # n_iterations = 100,
+        # n_jobs = 2,
+        # )
+        # end = time()
+        # print("DEMZ Multi run elapsed time", end-start)
 
-        with open(Dir_path/"Multi_run_DEMZ.pkl", 'wb') as fp:
-            pickle.dump(all_results, fp)
+        # with open(Dir_path/"Multi_run_DEMZ.pkl", 'wb') as fp:
+        #     pickle.dump(all_results, fp)
         
         
         sampler = pm.Metropolis
@@ -268,49 +267,49 @@ if __name__ == "__main__":
         cores=4, 
         bcm_model = bcm_model_2,
         n_iterations = 100,
-        n_jobs = 4,
+        n_jobs = 2,
         )
         end = time()
         print("MH Multi run elapsed time", end-start)
-        with open(Dir_path/"Multi_run_SMC_DEMZ_MH.pkl", 'wb') as fp:
+        with open(Dir_path/"Multi_run_MH.pkl", 'wb') as fp:
             pickle.dump(all_results, fp)
 
         
-        sampler = infer.NUTS
+        # sampler = infer.NUTS
 
-        start = time()
-        all_results[sampler.__name__] = cal.multirun(
-        sampler, 
-        draws = 10000,
-        tune = 1000,
-        chains=4,
-        cores=4, 
-        bcm_model = bcm_model_2,
-        n_iterations = 100,
-        nmodel=nmodel_2,
-        n_jobs = 4,
-        )
-        end = time()
-        print("NUTS Multi run elapsed time", end-start)
-        with open(Dir_path/"Multi_run_SMC_DEMZ_MH_NUTS.pkl", 'wb') as fp:
-            pickle.dump(all_results, fp)
+        # start = time()
+        # all_results[sampler.__name__] = cal.multirun(
+        # sampler, 
+        # draws = 10000,
+        # tune = 1000,
+        # chains=4,
+        # cores=4, 
+        # bcm_model = bcm_model_2,
+        # n_iterations = 100,
+        # nmodel=nmodel_2,
+        # n_jobs = 3,
+        # )
+        # end = time()
+        # print("NUTS Multi run elapsed time", end-start)
+        # with open(Dir_path/"Multi_run_SMC_DEMZ_MH_NUTS.pkl", 'wb') as fp:
+        #     pickle.dump(all_results, fp)
         
-        sampler = pm.DEMetropolis
-        start = time()
-        all_results[sampler.__name__] = cal.multirun(
-        sampler, 
-        draws = 10000,
-        tune = 1000,
-        chains=4,
-        cores=4, 
-        bcm_model = bcm_model_2,
-        n_iterations = 100,
-        n_jobs = 4,
-        )
-        end = time()
-        print("DEM Multi run elapsed time", end-start) 
+        # sampler = pm.DEMetropolis
+        # start = time()
+        # all_results[sampler.__name__] = cal.multirun(
+        # sampler, 
+        # draws = 10000,
+        # tune = 1000,
+        # chains=4,
+        # cores=4, 
+        # bcm_model = bcm_model_2,
+        # n_iterations = 100,
+        # n_jobs = 3,
+        # )
+        # end = time()
+        # print("DEM Multi run elapsed time", end-start) 
 
-        with open(Dir_path/"Multi_run_all.pkl", 'wb') as fp:
-            pickle.dump(all_results, fp)
+        # with open(Dir_path/"Multi_run_all.pkl", 'wb') as fp:
+        #     pickle.dump(all_results, fp)
 
 

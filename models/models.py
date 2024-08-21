@@ -130,11 +130,10 @@ def model2(
     )
     #m.add_transition_flow()
     # fixed parameters
-    incubation_period = 5.4
-    infectious_period = 7.3
+   
     m.add_infection_frequency_flow(name="infection", contact_rate = 1., source = "S", dest ="E")
-    m.add_transition_flow('progression', 1.0 / incubation_period, source = 'E', dest='I')
-    m.add_transition_flow('recovery', 1.0 / infectious_period, source = 'I', dest = 'R')
+    m.add_transition_flow('progression', 1.0 / Parameter("incubation_period"), source = 'E', dest='I')
+    m.add_transition_flow('recovery', 1.0 / Parameter("infectious_period"), source = 'I', dest = 'R')
     strata = [i for i in range(0, 65, 5)] 
     #All the compartments are age-strafied
     age_strat = Stratification(name='age', strata=strata,compartments=model_config["compartments"])
@@ -155,6 +154,19 @@ def model2(
     
     m.request_output_for_compartments(name="incidence", compartments=["I"])
 
+    age_strat = [f"{i}" for i in range(0,65,5)]
+
+    default_parameters = {
+    'age_transmission_rate_'+ str(age) : 0.25 for age in age_strat
+        }
+    #Default parameters
+    default_parameters["seed"] = 100.
+
+    default_parameters['incubation_period']= 5.4
+    default_parameters['infectious_period'] = 7.3
+
+    m.set_default_parameters(default_parameters)
+
 
     return m
 
@@ -171,29 +183,20 @@ def bcm_seir_age_strat(model_config: dict =
     df["date"] = pd.to_datetime(df.date)
     df.set_index(["age","date"], inplace=True)
 
-    # ages_labels = [f"{i:02}_{i+4:02}" for i in range(0,60, 5)] + ["60+"]
-    # targets_data = dict()
-    # for age in ages_labels:
-    #     targets_data[age] = df.loc[age]
+    #Model definition
+    model_2 = model2(model_config)
 
     ages_labels = [f"{i:02}_{i+4:02}" for i in range(0,60, 5)] + ["60+"]
     age_strat = [f"{i}" for i in range(0,65,5)]
 
-    parameters = {
-    'age_transmission_rate_'+ str(age) : 0.25 for age in age_strat
-        }
-    #Default parameters
-    parameters["seed"] = 100.
-
-    parameters['incubation_period']= 5.4
-    parameters['infectious_period'] = 7.3
+    default_parameters = model_2.get_default_parameters()
 
     
 
     
     # A uniform prior is defined for all the transmission rate
-    params = {param: (0.0,0.6) for param in parameters.keys() if param not in ("seed","incubation_period","infectious_period")}
-    # params = {"age_transmission_rate_0": (0.0000001,.8)}
+    # params = {param: (0.0,0.8) for param in default_parameters.keys() if param not in ("seed","incubation_period","infectious_period")}
+    params = {"age_transmission_rate_0": (0.0,.8)} #Only calibrate one transmission rate
     priors_seed = [esp.UniformPrior("seed",(1,1200))]
     # # A normal prior for the incubation and infectious periods
     # normal_priors = [ 
@@ -211,13 +214,12 @@ def bcm_seir_age_strat(model_config: dict =
     # Inc_disp = esp.UniformPrior("inc_disp",(0.1, 2000))
     targets = [
                 est.TruncatedNormalTarget("IXage_"+str(age),
-                                        df.loc[age_cat]["Oct 2020":"Nov 2020"].rolling(14).mean().iloc[14:]["cases"],
+                                        df.loc[age_cat]["Sep 2020":"Nov 2020"].rolling(14).mean().iloc[14:]["cases"],
                                           (0.0,500000),
                                 1200) for age_cat, age in zip(ages_labels, age_strat)
             ]
 
-    model_2 = model2(model_config)
+    
     #Defining  a Bayesian Compartmental Model
-
-    bcm_model_2 = BayesianCompartmentalModel(model_2, parameters, priors,targets)
+    bcm_model_2 = BayesianCompartmentalModel(model_2, default_parameters, priors,targets)
     return bcm_model_2

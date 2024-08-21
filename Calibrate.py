@@ -106,11 +106,6 @@ def Sampling_calib(
     sampler_name = mcmc_algo.__name__ #Name of the sampler
     if sampler_name == "NUTS": # We need to set some specifications for this sampler. 
                                 # Use of numpyro and/or BlackJax 
-        # pass
-        # def nmodel():
-        #     sampled = {k:numpyro.sample(k, dist.Uniform(0.0,1.0)) for k in bcm_model.parameters}
-        #     ll = numpyro.factor("ll", bcm_model.loglikelihood(**sampled))
-
         kernel = infer.NUTS(nmodel)
         mcmc = infer.MCMC(kernel, num_warmup=tune, num_chains=chains, num_samples=draws, progress_bar=False)
 
