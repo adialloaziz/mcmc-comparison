@@ -110,8 +110,8 @@ def model2(
         {"compartments": ("S", "E","I","R"), # "Ip","Ic", "Is", "R"),
         "population": 56490045, #England population size 2021
         # "seed": Parameter("seed"),
-        "start_time": datetime(2020, 6, 1),
-        "end_time": datetime(2020, 11, 30),
+        "start_time": datetime(2020, 8, 1),
+        "end_time": datetime(2020, 12, 1),
     },
            ):
     #----We've added the compartiment Exposed to the SIR model
@@ -124,7 +124,7 @@ def model2(
     m.set_initial_population(
         distribution=
         {
-            "S": model_config["population"] - Parameter("seed"), 
+            "S": Parameter("S_0"), #0.05*model_config["population"], #- Parameter("seed"), #10% of the population are susceptible
             "I": Parameter("seed"),
         },
     )
@@ -148,20 +148,22 @@ def model2(
 
 
     m.stratify_with(age_strat)
+    INCIDENCE = dict()
     for strat in strata:
 
-        m.request_output_for_flow(f"IXage_{str(strat)}", "infection", source_strata={"age": str(strat)}, save_results=True)
-    
-    m.request_output_for_compartments(name="incidence", compartments=["I"])
+        INCIDENCE[f"InciXage_{str(strat)}"] = m.request_output_for_flow(f"InciXage_{str(strat)}", "progression", source_strata={"age": str(strat)}, save_results=True)
+        m.request_function_output(f"notifiXage_{str(strat)}",INCIDENCE[f"InciXage_{str(strat)}"] * Parameter('detect_prop'))
+    # m.request_output_for_compartments(name="prevalence", compartments=["I"])
 
     age_strat = [f"{i}" for i in range(0,65,5)]
 
     default_parameters = {
-    'age_transmission_rate_'+ str(age) : 0.25 for age in age_strat
+    'age_transmission_rate_'+ str(age) : 0.3 for age in age_strat
         }
     #Default parameters
+    default_parameters["S_0"] = 0.1*model_config["population"]
     default_parameters["seed"] = 100.
-
+    default_parameters["detect_prop"] = 0.1
     default_parameters['incubation_period']= 5.4
     default_parameters['infectious_period'] = 7.3
 
@@ -173,7 +175,6 @@ def model2(
 def bcm_seir_age_strat(model_config: dict = 
         {"compartments": ("S", "E","I","R"), # "Ip","Ic", "Is", "R"),
         "population": 56490045, #England population size 2021
-        # "seed": Parameter("seed"),
         "start": datetime(2020, 8, 1),
         "end_time": datetime(2020, 11, 30)}):
     #------DATA-MANAGEMENT------------------------
@@ -195,9 +196,14 @@ def bcm_seir_age_strat(model_config: dict =
 
     
     # A uniform prior is defined for all the transmission rate
-    # params = {param: (0.0,0.8) for param in default_parameters.keys() if param not in ("seed","incubation_period","infectious_period")}
-    params = {"age_transmission_rate_0": (0.0,.8)} #Only calibrate one transmission rate
-    priors_seed = [esp.UniformPrior("seed",(1,1200))]
+    params = {param: (0.0,0.8) for param in default_parameters.keys() if param not in ("detect_prop","S_0",
+                                                                                       "seed","incubation_period",
+                                                                                       "infectious_period")}
+    # params = {"age_transmission_rate_0": (0.0,.8)} #Only calibrate one transmission rate
+    priors_seed = [esp.UniformPrior("S_0",(1800000,model_config['population'])), 
+                   esp.UniformPrior("seed",(1,2000)),
+                   esp.UniformPrior("detect_prop",(0.0,1.0))]
+    
     # # A normal prior for the incubation and infectious periods
     # normal_priors = [ 
     #     esp.TruncNormalPrior("incubation_period",5.4, 3.0, (1,15)),
@@ -213,9 +219,9 @@ def bcm_seir_age_strat(model_config: dict =
     # We rolle the data for 14 day to discard fluctuations
     # Inc_disp = esp.UniformPrior("inc_disp",(0.1, 2000))
     targets = [
-                est.TruncatedNormalTarget("IXage_"+str(age),
-                                        df.loc[age_cat]["Sep 2020":"Nov 2020"].rolling(14).mean().iloc[14:]["cases"],
-                                          (0.0,500000),
+                est.TruncatedNormalTarget("InciXage_"+str(age),
+                                        df.loc[age_cat]["Aug 2020":"Nov 2020"].rolling(14).mean().iloc[14:]["cases"][::7],
+                                          (0.0,50000),
                                 1200) for age_cat, age in zip(ages_labels, age_strat)
             ]
 

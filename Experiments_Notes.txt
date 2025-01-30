@@ -1,7 +1,3 @@
-18/06/24
-    "Remarques better performance in term of Rhat and Ess while runing analysis using cuda jpu (through jaxlib when executing the python script )
-    compared against cpu(notebook) "
-
     Initialisation strategies: 
         Pymc sampler: We initialise all chains to the same point generate uniformly in a chosen interval;
                       We can also set a initial point for each chain.

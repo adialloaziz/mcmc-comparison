@@ -1,3 +1,10 @@
+
+Firsltly Create a new conda(or virtual environment) environment to install required packages 
+    and run the notebook 
+    Instructions to create a conda environment:
+        conda create -n env_name python==3.10
+        conda activate env_name
+
 load and update conda
 preferably run code with python 3.10
 estival #to be installed first so some package will be included
